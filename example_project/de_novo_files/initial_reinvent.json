@@ -1,0 +1,76 @@
+{
+    "logging": {
+        "job_id": "demo",
+        "job_name": "example_run",
+        "logging_frequency": 0,
+        "logging_path": "/path/to/metis_reinvent/progress.log",
+        "recipient": "local",
+        "result_folder": "/path/to/metis_reinvent/results",
+        "sender": "http://127.0.0.1"
+    },
+    "model_type": "default",
+    "parameters": {
+        "diversity_filter": {
+            "minscore": 0.4,
+            "minsimilarity": 0.4,
+            "name": "IdenticalMurckoScaffold",
+            "nbmax": 25
+        },
+        "inception": {
+            "memory_size": 20,
+            "sample_size": 5,
+            "smiles": []
+        },
+        "reinforcement_learning": {
+            "agent": "/path/to/metis_reinvent/random.prior.new",
+            "batch_size": 128,
+            "learning_rate": 0.0001,
+            "margin_threshold": 50,
+            "n_steps": 100,
+            "prior": "/path/to/metis_reinvent/random.prior.new",
+            "sigma": 180
+        },
+        "scoring_function": {
+            "name": "custom_sum",
+            "parallel": true,
+            "parameters": [
+                {
+                    "component_type": "predictive_property",
+                    "name": "herg",
+                    "specific_parameters": {
+                        "descriptor_type": "ecfp",
+                        "model_path": "/path/to/herg_inverse_BR2L2048.pkl",
+                        "radius": 2,
+                        "scikit": "classification",
+                        "size": 2048,
+                        "transformation": {
+                            "transformation_type": "no_transformation"
+                        },
+                        "use_counts": false,
+                        "use_features": false
+                    },
+                    "weight": 0.4
+                },
+                {
+                    "component_type": "predictive_property",
+                    "name": "JNK3",
+                    "specific_parameters": {
+                        "descriptor_type": "ecfp",
+                        "model_path": "/path/to/metis_reinvent/qsar_jnk3_BR3L2048.pkl",
+                        "radius": 3,
+                        "scikit": "classification",
+                        "size": 2048,
+                        "transformation": {
+                            "transformation_type": "no_transformation"
+                        },
+                        "use_counts": false,
+                        "use_features": false
+                    },
+                    "weight": 1
+                }
+            ]
+        }
+    },
+    "run_type": "reinforcement_learning",
+    "version": 3
+}

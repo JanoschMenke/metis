@@ -1,0 +1,35 @@
+[project]
+name = "metis"
+version = "0.1.0"
+description = "A Grpahical User Interface to collect human feedback on molecular structures."
+authors = [
+  {name = "Janosch Menke", email = "janosch.menke.research@proton.me"},
+  {name = "Yasmine Nahal"},
+  {name = "Esben Jannik Bjerrum"}
+]
+requires-python = ">= 3.8, <3.11"
+readme = "README.md"
+license = {file = "LICENSE"}
+dependencies = [
+    "numpy >= 1.19.5",
+    "pandas >= 1.3.0",
+    "rdkit",
+    "PySide2",
+    "scikit-learn<=1.2.2,>1.0.0",
+    "cairosvg",
+    "pydantic",
+    "pyyaml",
+    "rdeditor@git+https://github.com/EBjerrum/rdeditor",
+]
+
+[build-system]
+requires = ["setuptools>=61.2", "wheel"]
+
+[tool.setuptools.package-data]
+metis = ["design/*"]
+
+[tool.setuptools.packages.find]
+exclude = ["results*", "data*", "initialModelGeneration*", "example_project*"]
+
+[project.scripts]
+metis = "metis.metis:launch"

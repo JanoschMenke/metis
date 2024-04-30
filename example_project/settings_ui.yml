@@ -1,0 +1,63 @@
+seed: 23234
+max_iterations: 1
+innerloop_iterations: null
+activity_label: "JNK3" # None 
+introText: "We are interested in the design of inhibitor for the JNK3 Kinase. We have identified two key properties:"
+propertyLabels: 
+  "JNK3 Activity": "raw_JNK3"
+  "hERG Inactivity": "raw_herg"
+data:
+  initial_path: "initial_molecules.csv"
+  path: "scaffold_memory.csv" 
+  selection_strategy: "random"
+  num_molecules: 20
+  run_name: "testrun"
+ui:
+  show_atom_contributions: 
+    render: true
+    path: "qsar_files/qsar_jnk3_BR3L2048.pkl"
+    ECFP:
+      bitSize: 2048
+      radius: 3
+      useCounts: false 
+  show_reference_molecules:
+    render: true
+    path: "qsar_files/qsar_trainingsdata.csv"
+  tab: 
+    render: true
+    tab_names: ["General","JNK3"]
+  navigationbar:
+    sendButton: 
+      render: true
+    editButton:
+      render: true
+  general:
+    render: true
+    slider: false
+  substructures:
+    render: true
+    liabilities:
+      ugly:
+        name: "Ugly"
+        color: "#ff7f7f"
+      tox:
+        name: "Toxicity" 
+        color: "#51d67e"
+      stability:
+        name: "Stability"
+        color: "#eed358"
+      like:
+        name: "Good"
+        color: "#9542f5"
+  global_properties:
+    render: true
+    liabilities: [
+            "Solubility",
+            "Lipophilicity",
+            "Plasma Proteinbinding",
+            "Synthetic Accessibility",
+            "Permeability",
+            "hERG", 
+            "Too Big",
+            "Too Small",
+        ]
