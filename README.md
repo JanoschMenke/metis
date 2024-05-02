@@ -1,19 +1,21 @@
-```
-      ___           ___                                   ___     
-     /__/\         /  /\          ___       ___          /  /\    
-    |  |::\       /  /:/_        /  /\     /  /\        /  /:/_   
-    |  |:|:\     /  /:/ /\      /  /:/    /  /:/       /  /:/ /\  
-  __|__|:|\:\   /  /:/ /:/_    /  /:/    /__/::\      /  /:/ /::\ 
- /__/::::| \:\ /__/:/ /:/ /\  /  /::\    \__\/\:\__  /__/:/ /:/\:\
- \  \:\~~\__\/ \  \:\/:/ /:/ /__/:/\:\      \  \:\/\ \  \:\/:/~/:/
-  \  \:\        \  \::/ /:/  \__\/  \:\      \__\::/  \  \::/ /:/ 
-   \  \:\        \  \:\/:/        \  \:\     /__/:/    \__\/ /:/  
-    \  \:\        \  \::/          \__\/     \__\/       /__/:/   
-     \__\/         \__\/                                 \__\/
-```   
-This is the repository for "Metis" a GUI to aid in the human analysis of de novo generated molecules.
-At its core, it is built around [Esben Bjerrums](https://github.com/EBjerrum) [rdEditor](https://github.com/EBjerrum/rdeditor).
+# Metis
+Metis is GUI to enable the collection of accurate and detailed feedback on small molecules.
 
+At its core, it is built around [Esben Bjerrums](https://github.com/EBjerrum) [rdEditor](https://github.com/EBjerrum/rdeditor) using PySide2.
+
+**Table of Contents**
+
+- [Metis](#metis)
+  * [Set Up](#set-up)
+    + [Installation](#installation)
+      - [Dependencies](#dependencies)
+    + [SSH](#ssh)
+  * [Usage](#usage)
+    + [Examples](#examples)
+      - [UI Only](#ui-only)
+      - [Reward Model](#reward-model)
+      - [De Novo Design](#de-novo-design)
+  * [Settings](#settings)
 
 ## Set up
 
@@ -36,13 +38,13 @@ Depending on the OS you are running installing `cairosvg` through pip can cause 
 
 
 ### SSH
-It is assumed you have a working version of Reinvent on a Server instance that is running slurm and ssh.
+It is assumed you have a working version of Reinvent on a Server instance that is running Slurm and ssh.
 
 1. Change the ssh settings in the `example_project/de_novo_files/ssh_settings.yml` file.
-      - `ssh_login`: your login to ssh e.g. `username@remote_server` *you should be able to access your remote server without password for example using an RSA Key*
+      - `ssh_login`: your login to SSH e.g. `username@remote_server` *you should be able to access your remote server without a password, for example, using an RSA Key*
       - `path_remote_folder`: path on the remote machine, from where Reinvent files will be loaded and stored.
       - `de_novo_json`: specify which default `reinvent.json` file to use
-      - `default_slurm`: specify which default slurm job to use
+      - `default_slurm`: specify which default Slurm job to use
 
 2. Copy and unzip the `metis_reinvent.zip` to the remote machine. Make sure that the `path_remote_folder` in the `ssh_settings.yml` file matches with the folder location and also in the `initial_reinvent.json`.
 
@@ -59,7 +61,7 @@ This will start the GUI. Examples can be found below.
 
 #### UI Only
 
-The most simple example, only the GUI will be started to collect feedback. No models are trained and no de novo run started.
+In the most simple example, only the GUI will be started to collect feedback. No models are trained and no de novo run started.
 ```
 cd example_project
 metis -f settings_ui.yml --output results/
@@ -67,8 +69,8 @@ metis -f settings_ui.yml --output results/
 
 #### Reward Model
 
-Here, next to collecting feedback, a reward model is also trained on the feedback. For this we provided a QSAR model and Oracle model for JNK3 activity.
-The setting `use_oracle_score: False`,will use the feedback of human as the target variable that is to be predicted. If the settings is set to `True`, the molecules liked by the chemist will be scored by the oracle, and these scores will then be used as the target varible for the reward model. This can be thought of as an active learning setting, where the chemists decides which molecules are being "biologically validated".
+Here, next to collecting feedback, a reward model is also trained on the feedback. For this, we provided a QSAR model and Oracle model for JNK3 activity.
+The setting `use_oracle_score: False`, will use the feedback of humans as the target variable that is to be predicted. If the setting is set to `True`, the molecules liked by the chemist will be scored by the oracle, and these scores will then be used as the target varible for the reward model. This can be thought of as an active learning setting, where the chemists decides which molecules are being "biologically validated".
 
 
 ```
@@ -78,15 +80,15 @@ metis -f settings_reward_model.yml --output results/
 
 #### De Novo Design
 
-With these settings a REINVENT de novo run, can be started directly using `Metis` on a remote machine.
+With these settings, a REINVENT de novo run can be started directly using `Metis` on a remote machine.
 The remote machine needs:
 - a working installation of REINVENT 3. 
 - update the REINVENTS scikit-learn to >1.0.0
-- slurm
-- access through ssh wih a key
+- Wlurm
+- access through SSH wih a key
 - the unzipped `metis_reinvent.zip` folder
 
-Ones copied and unzipped, the paths and settings in the `de_novo_files` folder need to be adapted to fit to your paths on the remote machine.
+Once copied and unzipped, the paths and settings in the `de_novo_files` folder need to be adapted to fit to your paths on the remote machine.
 ```
 cd example_project
 metis -f settings_denovo.yml --output results/
@@ -115,9 +117,9 @@ Here is a brief overview of all settings
 | <strong>de_novo_model</strong>        | Union[<a href="#denovoconfig">DeNovoConfig</a>, None]           | False      | None      |
 | <strong>reward_model</strong>         | Union[<a href="#rewardmodelconfig">RewardModelConfig</a>, None] | False      | None      |
 
-- `debug`: if `True` will overwrite existing reults folders
+- `debug`: if `True` will overwrite existing results folders
 - `max_iterations` defines how often molecules are sampled, feedback collected and the model updated
-- `innerloop_iteration` how often molecules are resampled from the same scaffold memory before the model is send to the remote machine
+- `innerloop_iteration` how often molecules are resampled from the same scaffold memory before the model is sent to the remote machine
 
 
 <h3>DataConfig</h3>
@@ -251,7 +253,7 @@ liabilities:
 | <strong>training_data_path</strong> | str                       | True       | ...       |
 | <strong>ECFP</strong>               | <a href="#ecfpconfig">ECFPConfig</a> | True       | ...       |
 
-- `use_oracle_score` instead of using the feedback directly to train the reward model, one can use the oracle model to score molecules liked by the user. The reward model is then trained on the predicitons of the oracle rather than on the direct feedback. This mimics a active learning scenario where the chemist can chose which molecules he wants to biologically validate
+- `use_oracle_score` instead of using the feedback directly to train the reward model, one can use the oracle model to score molecules liked by the user. The reward model is then trained on the predictions of the oracle rather than on the direct feedback. This mimics an active learning scenario where the chemist can choose which molecules he wants to biologically validate
 
 
 
