@@ -19,7 +19,7 @@ dependencies = [
     "cairosvg",
     "pydantic",
     "pyyaml",
-    "rdeditor@git+https://github.com/EBjerrum/rdeditor",
+    "rdeditor@git+https://github.com/EBjerrum/rdeditor.git@extended_features",
 ]
 
 [build-system]
