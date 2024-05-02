@@ -18,7 +18,7 @@ class molwall(QtWidgets.QMainWindow):
         self.cwd = f"{PKGDIR}/utils/temp_images/molImages/"
         if os.path.exists(self.cwd):
             shutil.rmtree(self.cwd)
-        os.mkdir(self.cwd)
+        os.makedirs(self.cwd)
         self.image_paths = []
         self.molInfoDicts = []
         self.smilesDict = {0: {}}
