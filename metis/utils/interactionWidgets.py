@@ -104,7 +104,7 @@ class stackedWidget(QtWidgets.QWidget):
         self.globalInteractionWindow = generalEvaluation(settings)
 
         self.text1 = QLabel(
-            "How much would you prioritize this molecule as a DRD2 binder?"
+            "How much would you prioritize this molecule?"
         )
         self.text1.setWordWrap(True)
         self.text1.setAlignment(QtCore.Qt.AlignTop)
