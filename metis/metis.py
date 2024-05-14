@@ -345,7 +345,10 @@ class Metis(QtWidgets.QMainWindow):
             )
 
     def gatherSelectedAtoms(self):
-        self.backend.atom_selection = self.editor.selectedAtoms
+        if len(self.editor.selectedAtoms) > 0:
+            self.backend.atom_selection = self.editor.selectedAtoms
+        else:
+            self.backend.atom_selection = []
 
     def switchLiability(self, liability: str):
         print(f"Switching Liability: {self.backend.current_liability} -> {liability}")
