@@ -13,6 +13,7 @@ import os
 import shutil
 from pathlib import Path
 import warnings
+from typing import Tuple
 
 
 class evalDataFrame(pd.DataFrame):
@@ -120,7 +121,7 @@ class evalDataFrame(pd.DataFrame):
         self.drop(self.columns[0], axis=1, inplace=True)
 
 
-def loadData(settings: Dict, initial: bool = True) -> tuple[pd.DataFrame, int]:
+def loadData(settings: Dict, initial: bool = True) -> Tuple[pd.DataFrame, int]:
     """
     The function `loadData` loads data from a CSV file based on the provided settings, applies a
     selection strategy to the data if specified, and returns the resulting DataFrame along with a subset

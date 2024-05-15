@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from rdkit.Chem import AllChem as Chem
 from rdkit.Chem.Scaffolds import MurckoScaffold as ms
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 class analyser:
@@ -39,7 +39,7 @@ class analyser:
 
     def trackFoundScaffolds(
         self, evaluatedDataframe: pd.DataFrame, generatedDataframe: pd.DataFrame
-    ) -> tuple[Dict, Dict]:
+    ) -> Tuple[Dict, Dict]:
         evaluatedOutDict = self.newTopologicalScaffolds(
             evaluatedDataframe.SMILES, label="evaluated"
         )
