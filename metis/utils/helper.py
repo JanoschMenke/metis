@@ -12,6 +12,7 @@ import pandas as pd
 from typing import List, Dict
 from pathlib import Path
 import os
+import PySide2
 
 
 def get_random_string(length: int):
@@ -239,3 +240,15 @@ def calcSimilarityToOriginal(smiles1, smiles2):
     m1 = fpgen.GetFingerprint(Chem.MolFromSmiles(smiles1))
     m2 = fpgen.GetFingerprint(Chem.MolFromSmiles(smiles2))
     return TanimotoSimilarity(m1, m2)
+
+
+def is_faulty_pyside_version():
+    "shitty hack to check the verson of Pyside"
+    version = PySide2.__version__
+    version = version.split(".")
+    version = int("".join(version[:3]))
+    if (version >= 5151) & (version <= 5152):
+        return True
+    else:
+
+        return False

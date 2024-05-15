@@ -19,6 +19,8 @@ from rdeditor import molEditWidget
 
 from rdkit.Chem import AllChem as Chem
 from . import PKGDIR
+import os
+from sys import platform
 
 
 # TODO: File TRANSFER FOR SSH WITH SUBPROCESS
@@ -372,6 +374,8 @@ class Metis(QtWidgets.QMainWindow):
 
 
 def launch(loglevel="WARNING"):
+    if (platform == "darwin") & (helper.is_faulty_pyside_version()):
+        os.environ["QT_MAC_WANTS_LAYER"] = "1"
     "Function that launches the mainWindow Application"
     # Exception Handling
     parser = argparse.ArgumentParser("Metis")
