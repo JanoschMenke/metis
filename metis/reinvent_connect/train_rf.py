@@ -60,8 +60,6 @@ class trainRF:
             y (List, optional): A list of labels corresponding to the input SMILES. If None,
                 the labels will be retrieved from the model's oracle (if available). Default is None.
 
-        Raises:
-            AssertionError: If the oracle is not available and y is not provided.
 
         Returns:
             None: The function updates the internal model and does not return any value.
@@ -209,6 +207,6 @@ class ecfp_generator:
             else self.fpgen.GetFingerprintAsNumPy
         )
 
-    def get_fingerprints(self, smiles: List[str]) -> np.ndarray[np.int32]:
+    def get_fingerprints(self, smiles: List[str]) -> np.ndarray:
         fps = np.stack([self.generate(Chem.MolFromSmiles(smile)) for smile in smiles])
         return fps
