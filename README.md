@@ -69,6 +69,16 @@ This will start the GUI. Examples can be found below.
 #### UI Only
 
 In the most simple example, only the GUI will be started to collect feedback. No models are trained and no de novo run started.
+
+```diff
+- If you want to show the atom contributions to the predictions/model explanation
+- (show_atom_contributions: render: true)
+- you will experience heavy slowdowns when switching to a new molecule.
+- The only solution at the moment is not to show them.
+- You can set show_atom_contributions: render: False.
+- This will yield a much smoother experience.    
+```
+
 ```
 cd example_project
 metis -f settings_ui.yml --output results/
