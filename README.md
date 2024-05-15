@@ -28,7 +28,7 @@ You can find the preprint at [ChemRxiv](https://chemrxiv.org/engage/chemrxiv/art
 
 ### Installation
 
-Download the repository and navigate to the download location. You can install `metis` with `pip install .`. Make sure the environment you want to install into is activated and has python `>= 3.8, <3.11` installed.
+Download the repository and navigate to the download location. You can install `metis` with `pip install .`. Make sure the environment you want to install into is activated and has python `>= 3.9, <3.11` installed.
 
 #### Dependencies
 Some notes on the dependencies. 
