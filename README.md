@@ -1,7 +1,12 @@
 # Metis - A Python-Based User Interface to Collect Expert Feedback for Generative Chemistry Models
+---
 
 Metis is GUI to enable the collection of accurate and detailed feedback on small molecules.
 At its core, it is built around [Esben Bjerrums](https://github.com/EBjerrum) [rdEditor](https://github.com/EBjerrum/rdeditor) using PySide2.
+
+You can find the preprint at [ChemRxiv](https://chemrxiv.org/engage/chemrxiv/article-details/66421031418a5379b0255d8a)
+
+---
 
 **Table of Contents**
 
@@ -16,6 +21,8 @@ At its core, it is built around [Esben Bjerrums](https://github.com/EBjerrum) [r
       - [Reward Model](#reward-model)
       - [De Novo Design](#de-novo-design)
   * [Settings](#settings)
+
+---
 
 ## Set up
 
