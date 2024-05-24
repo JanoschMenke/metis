@@ -176,7 +176,7 @@ Here is a brief overview of all settings
 | <strong>path</strong>   | Union[str, None]                       | False      |           |
 | <strong>ECFP</strong>   | Union[<a href="#ecfpconfig">ECFPConfig</a>, None] | False      |           |</p>
 
-<h3>ECFPConfig
+<h3>ECFPConfig</h3>
 
 | Name          | Type   | Required   | Default   |
 |---------------|--------|------------|-----------|
