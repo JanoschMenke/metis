@@ -1,26 +1,30 @@
 [project]
 name = "metis"
-version = "0.1.0"
+version = "1.0.0"
 description = "A Grpahical User Interface to collect human feedback on molecular structures."
+keywords = ["de-novo-design", "human-in-the-loop", "GUI"]
 authors = [
-  {name = "Janosch Menke", email = "janosch.menke.research@proton.me"},
-  {name = "Yasmine Nahal"},
-  {name = "Esben Jannik Bjerrum"}
+  { name = "Janosch Menke", email = "janosch.menke.research@proton.me" },
+  { name = "Yasmine Nahal" },
+  { name = "Esben Jannik Bjerrum" },
 ]
-requires-python = ">= 3.8, <3.11"
+requires-python = ">= 3.9, <3.11"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 dependencies = [
-    "numpy >= 1.19.5",
-    "pandas >= 1.3.0",
-    "rdkit",
-    "PySide2>5.15",
-    "scikit-learn<=1.2.2,>1.0.0",
-    "cairosvg",
-    "pydantic",
-    "pyyaml",
-    "rdeditor",
+  "numpy >= 1.19.5",
+  "pandas >= 1.3.0",
+  "rdkit",
+  "PySide2>5.15",
+  "scikit-learn<=1.2.2,>1.0.0",
+  "cairosvg",
+  "pydantic",
+  "pyyaml",
+  "rdeditor",
 ]
+
+[project.urls]
+homepage = "https://github.com/JanoschMenke/metis"
 
 [build-system]
 requires = ["setuptools>=61.2", "wheel"]
