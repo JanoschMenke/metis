@@ -8,7 +8,7 @@ import os
 from metis.utils.helper import get_random_string
 from metis.utils.data import extract_and_process_liabilities
 import time
-from PySide2.QtCore import QObject, Signal, Slot, QRunnable
+from PySide6.QtCore import QObject, Signal, Slot, QRunnable
 import yaml
 import copy
 from metis import PKGDIR

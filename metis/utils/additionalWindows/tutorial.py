@@ -1,10 +1,10 @@
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
 )
 import time
-from PySide2.QtGui import QPixmap
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide6.QtGui import QPixmap
+from PySide6 import QtWidgets, QtCore, QtGui
 
 
 class Second(QtWidgets.QMainWindow):

@@ -12,7 +12,7 @@ import pandas as pd
 from typing import List, Dict
 from pathlib import Path
 import os
-import PySide2
+import PySide6
 
 
 def get_random_string(length: int):
@@ -243,6 +243,8 @@ def calcSimilarityToOriginal(smiles1, smiles2):
 
 
 def is_faulty_pyside_version():
+    return False
+    """
     "shitty hack to check the verson of Pyside"
     version = PySide2.__version__
     version = version.split(".")
@@ -252,3 +254,4 @@ def is_faulty_pyside_version():
     else:
 
         return False
+    """

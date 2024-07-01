@@ -5,16 +5,16 @@ import numpy as np
 import io
 from PIL import Image
 import pickle
-from PySide2.QtCore import QByteArray
+from PySide6.QtCore import QByteArray
 from cairosvg import svg2png
 import os
 from typing import Dict, List
 from functools import partial
 from metis.utils.data import sample_training_data
 
-from PySide2.QtCore import QObject, Signal, Slot, QRunnable
-from PySide2 import QtCore
-from PySide2.QtGui import QPixmap
+from PySide6.QtCore import QObject, Signal, Slot, QRunnable
+from PySide6 import QtCore
+from PySide6.QtGui import QPixmap
 from metis import PKGDIR
 
 

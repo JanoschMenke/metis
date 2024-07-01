@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QLabel
-from PySide2 import QtWidgets, QtCore, QtGui
+from PySide6.QtWidgets import QLabel
+from PySide6 import QtWidgets, QtCore, QtGui
 from .ratingWidgets import (
     generalRating,
     TPProfile,
@@ -10,7 +10,7 @@ from .ratingWidgets import (
     selectLocalSubstructures,
     molCounter,
 )
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 
 
 class evaluationWindow(QtWidgets.QWidget):
@@ -103,9 +103,7 @@ class stackedWidget(QtWidgets.QWidget):
         pageLayout.setContentsMargins(0, 0, 0, 0)
         self.globalInteractionWindow = generalEvaluation(settings)
 
-        self.text1 = QLabel(
-            "How much would you prioritize this molecule?"
-        )
+        self.text1 = QLabel("How much would you prioritize this molecule?")
         self.text1.setWordWrap(True)
         self.text1.setAlignment(QtCore.Qt.AlignTop)
         self.text2 = QLabel("What properties of the molecule raise concerns?")

@@ -11,7 +11,7 @@ from metis.utils import (
 from metis.reinvent_connect import to_reinvent as tr
 from metis.backend import settings_validator
 
-from PySide2.QtCore import Qt, QThread, QThreadPool, Signal
+from PySide6.QtCore import Qt, QThread, QThreadPool, Signal
 import os
 from os.path import join
 import yaml

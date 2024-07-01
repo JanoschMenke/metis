@@ -5,9 +5,12 @@ from typing import List, Dict, Optional
 
 # Import required modules
 import sys, time, os, shutil
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
-from PySide2 import QtCore, QtGui, QtWidgets, QtSvg
+from PySide6.QtGui import *
+
+
+from PySide6.QtWidgets import *
+from PySide6.QtWidgets import QApplication
+from PySide6 import QtCore, QtGui, QtWidgets, QtSvg
 
 import argparse
 from metis.backend import Backend
@@ -71,6 +74,7 @@ class Metis(QtWidgets.QMainWindow):
             self.editor.setFixedSize(600, 600)
 
     def setMolecularEditor(self):
+
         self.secondEditor = rdeditor_wrapper.MetisEditor(loglevel="Warning")
         self.secondEditor.saveAction.triggered.connect(self.getEditedMolecule)
 
@@ -389,28 +393,30 @@ def launch(loglevel="WARNING"):
         print()
         parser.print_help()
         sys.exit(1)
+    print("here")
+    myApp = QApplication(sys.argv)
 
-    try:
-        myApp = QApplication(sys.argv)
+    mainWindow = Metis(
+        args.file,
+        output_folder=args.output,
+        fileName=args.file,
+        loglevel=loglevel,
+    )
+    print("here")
 
-        mainWindow = Metis(
-            args.file,
-            output_folder=args.output,
-            fileName=args.file,
-            loglevel=loglevel,
-        )
+    stylesheet = helper.read_and_replace_css(f"{PKGDIR}/design/style.css", PKGDIR)
+    myApp.setStyleSheet(stylesheet)
+    myApp.exec_()
 
-        stylesheet = helper.read_and_replace_css(f"{PKGDIR}/design/style.css", PKGDIR)
-        myApp.setStyleSheet(stylesheet)
-        myApp.exec_()
-
-        sys.exit(0)
+    sys.exit(0)
+    """
     except NameError:
         print("Name Error:", sys.exc_info()[1])
     except SystemExit:
         print("Closing Window...")
     except Exception:
         print(sys.exc_info())
+    """
 
 
 if __name__ == "__main__":

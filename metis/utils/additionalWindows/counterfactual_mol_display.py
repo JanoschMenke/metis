@@ -1,8 +1,8 @@
-from PySide2.QtWidgets import (
+from PySide6.QtWidgets import (
     QLabel,
 )
-from PySide2.QtGui import QPixmap
-from PySide2 import QtWidgets, QtCore
+from PySide6.QtGui import QPixmap
+from PySide6 import QtWidgets, QtCore
 from rdkit.Chem import Draw
 from rdkit.Chem import AllChem as Chem
 
