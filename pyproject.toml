@@ -20,7 +20,7 @@ dependencies = [
   "cairosvg",
   "pydantic",
   "pyyaml",
-  "rdeditor",
+  "rdeditor==0.2.0.1",
 ]
 
 [project.urls]
