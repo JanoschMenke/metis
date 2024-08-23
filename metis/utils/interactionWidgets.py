@@ -195,7 +195,7 @@ class generalEvaluation(QtWidgets.QWidget):
         "returns the users rating of the molecule"
         ratingMolecule = self.sliderModule.currentPressed
         concernsMolecule = [
-            int(self.listwidget.rowCheckboxes.itemAt(i).widget().checkState())
+            int(self.listwidget.rowCheckboxes.itemAt(i).widget().checkState().value)
             for i in range(len(self.listwidget.labelsCheckbox))
         ]
         return ratingMolecule, concernsMolecule

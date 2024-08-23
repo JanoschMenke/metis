@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 import time
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QShortcut
 from PySide6 import QtWidgets, QtCore, QtGui
 
 
@@ -18,13 +18,13 @@ class Second(QtWidgets.QMainWindow):
         self.globallayout = QtWidgets.QVBoxLayout()  # combines navBar and mainlayout
         self.navigation = navigationBarTutorial()
         self.navigation.backButton.clicked.connect(lambda: self.updateSlide(-1))
-        QtWidgets.QShortcut(
+        QShortcut(
             QtGui.QKeySequence("left"),
             self.navigation.backButton,
             lambda: self.updateSlide(-1),
         )
 
-        QtWidgets.QShortcut(
+        QShortcut(
             QtGui.QKeySequence("right"),
             self.navigation.nextButton,
             lambda: self.updateSlide(1),

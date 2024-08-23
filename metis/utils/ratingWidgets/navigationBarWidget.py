@@ -51,13 +51,13 @@ class navigationBar(QtWidgets.QWidget):
         self.backButton.clicked.connect(lambda: self.directionButtonClick(-1))
         self.nextButton.clicked.connect(lambda: self.directionButtonClick(+1))
 
-        QtWidgets.QShortcut(
+        QtGui.QShortcut(
             QtGui.QKeySequence("left"),
             self.backButton,
             lambda: self.directionButtonClick(-1),
         )
 
-        QtWidgets.QShortcut(
+        QtGui.QShortcut(
             QtGui.QKeySequence("right"),
             self.nextButton,
             lambda: self.directionButtonClick(+1),
