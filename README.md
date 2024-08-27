@@ -37,6 +37,10 @@ If you wish to use [REINVENT 3](https://github.com/MolecularAI/Reinvent
 #### Dependencies
 Some notes on the dependencies. 
 
+**PySide 2**
+
+Getting the environment set up with PySide2 can be somewhat challenging. It is planned to move to PySide6. There already exists a branch for it, which you can try out. It works but has not yet completely been tested.
+
 **scikit-learn**
 
 The version `scikit-learn` constraints are only set to make sure that the examples given here work.
