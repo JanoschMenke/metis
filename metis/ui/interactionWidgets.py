@@ -1,14 +1,10 @@
 from PySide6.QtWidgets import QLabel
-from PySide6 import QtWidgets, QtCore, QtGui
-from .ratingWidgets import (
+from PySide6 import QtWidgets, QtCore
+from metis.ui.widgets import (
     generalRating,
     TPProfile,
-    QHLine,
-    QVLine,
     multiSelect,
-    navigationBar,
     selectLocalSubstructures,
-    molCounter,
 )
 from PySide6.QtCore import Qt
 
@@ -162,7 +158,6 @@ class stackedWidget(QtWidgets.QWidget):
             self.globalInteractionWindow.listwidget.hide()
         if settings["ui"]["substructures"]["render"] == False:
             self.text3.hide()
-
             if settings["ui"]["tab"]["render"] == True:
                 self.tab.hide()
             else:

@@ -15,7 +15,7 @@ class molwall(QtWidgets.QMainWindow):
         super(molwall, self).__init__(parent)
         self.setMinimumSize(1300, 700)
         self.setMaximumSize(1300, 700)
-        self.cwd = f"{PKGDIR}/utils/temp_images/molImages/"
+        self.cwd = f"{PKGDIR}/resources/temp_images/molImages/"
         if os.path.exists(self.cwd):
             shutil.rmtree(self.cwd)
         os.makedirs(self.cwd)

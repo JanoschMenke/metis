@@ -8,7 +8,7 @@ metis/metis.spec
 results/*
 metis/utils/additionalWindows/molImages
 wandb/
-metis/reinvent_connect/input_files/current_run/*
+metis/reinvent_connect/resources/current_run/*
 metis/reinvent_connect/old_input_files/
 metis/reinvent_connect/old_code.py
 example_project/results
@@ -128,10 +128,10 @@ data/scaffold_memory.csv
 data/testResults.csv
 
 # Temp images
-metis/utils/temp_images/*
+metis/resources/temp_images/*
 
 # Setting files
-metis/reinvent_connect/input_files/reinvent.slurm
-metis/reinvent_connect/input_files/standard_slurm.slurm
-metis/reinvent_connect/input_files/ssh_settings.yml
-metis/reinvent_connect/input_files/test_qsar.json
+metis/resources/input_files/reinvent.slurm
+metis/resources/input_files/standard_slurm.slurm
+metis/resources/input_files/ssh_settings.yml
+metis/resources/input_files/test_qsar.json

@@ -1,12 +1,10 @@
 # %%
 import subprocess as sb
 import copy
-import pandas as pd
-from rdkit.Chem import AllChem as Chem
 import json
 import os
 from metis.utils.helper import get_random_string
-from metis.utils.data import extract_and_process_liabilities
+from metis.core.data import extract_and_process_liabilities
 import time
 from PySide6.QtCore import QObject, Signal, Slot, QRunnable
 import yaml
@@ -54,7 +52,7 @@ class Worker(QRunnable):
 
 class DeNovoRunner:
     def __init__(self, de_novo_config):
-        self.cwd = f"{PKGDIR}/reinvent_connect"
+        self.cwd = f"{PKGDIR}/resources"
         self.settings = de_novo_config
         self.ssh_settings = yaml.safe_load(open(self.settings.ssh_settings))
         self.slurm_path = self.ssh_settings["path_remote_folder"]
@@ -139,7 +137,7 @@ class DeNovoRunner:
         # checks if the file "scaffold_memory.csv" exists in the specified directory
         # `slurm_path/results`. If the file exists, it uses the `scp` command to copy the file from the remote
         # server to the local `../data/` directory. It also copies the file "Agent.ckpt" from the remote
-        # server to the local `reinvent_connect/input_files/current_run/` directory.
+        # server to the local `reinvent_connect/resources/current_run/` directory.
         if check_if_results_exist(
             self.ssh_settings["ssh_login"], self.slurm_path, "scaffold_memory.csv"
         ):

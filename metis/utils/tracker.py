@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from rdkit.Chem import AllChem as Chem
-from metis.utils import helper, data
+from metis.core import data
 import json
 import copy
 from typing import List, Dict

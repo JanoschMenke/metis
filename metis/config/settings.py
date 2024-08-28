@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_validator, validator
 from typing import Dict, List, Optional
 import re
 import warnings
+import yaml
 
 
 class DataConfig(BaseModel):
@@ -151,3 +152,36 @@ class BaseConfig(BaseModel):
                 "No De Novo Model specified -> Feedback will not be included when Training Reinvent."
             )
         return v
+
+
+def load_settings(settings_file: str) -> BaseConfig:
+    """
+    Load settings from a YAML file and validate them using the BaseConfig model.
+
+    Args:
+        settings_file (str): Path to the YAML settings file.
+
+    Returns:
+        BaseConfig: Validated settings object.
+
+    Raises:
+        ValueError: If the settings file is invalid or missing required fields.
+    """
+    try:
+        with open(settings_file, "r") as f:
+            settings_dict = yaml.safe_load(f)
+        return BaseConfig(**settings_dict)
+    except Exception as e:
+        raise ValueError(f"Error loading settings: {str(e)}")
+
+
+def save_settings(settings: BaseConfig, settings_file: str) -> None:
+    """
+    Save the current settings to a YAML file.
+
+    Args:
+        settings (BaseConfig): The current settings object.
+        settings_file (str): Path to save the YAML settings file.
+    """
+    with open(settings_file, "w") as f:
+        yaml.dump(settings.dict(), f)

@@ -1,22 +1,17 @@
+from metis.ui import counterfactual_mol_display, tutorial
+from metis.core import data
 from metis.utils import (
     helper,
-    data,
-    counterfactual_mol_display,
-    tutorial,
-    molwall,
-    analysis,
     tracker,
     draw,
 )
-from metis.reinvent_connect import to_reinvent as tr
-from metis.backend import settings_validator
+from metis.config.settings import BaseConfig
+from metis.models import random_forest as trf, denovo_generator as tr
 
-from PySide6.QtCore import Qt, QThread, QThreadPool, Signal
+from PySide6.QtCore import QThreadPool
 import os
 from os.path import join
-import yaml
 import pickle
-from metis.reinvent_connect import train_rf as trf
 import numpy as np
 from rdkit import Chem
 import shutil
@@ -26,11 +21,10 @@ from metis import PKGDIR
 
 
 class Backend:
-    def __init__(self, settings, results_folder: str):
-        helper.clear_current_files(
-            f"{PKGDIR}/reinvent_connect/input_files/current_run/"
-        )
-        self.loadFiles(settings)
+    def __init__(self, settings: BaseConfig, results_folder: str):
+        self.settings = settings
+        helper.clear_current_files(f"{PKGDIR}/resources/input_files/current_run/")
+        self.loadFiles()
         if self.settings.reward_model is not None:
             self.initRFTrainer(self.settings.reward_model)
         if self.settings.de_novo_model is not None:
@@ -42,10 +36,8 @@ class Backend:
         self.setGlobalVariables()
         self.clear_temp_images()
 
-    def loadFiles(self, settings):
-
+    def loadFiles(self):
         self.designPath = f"{PKGDIR}/design/"
-        self.settings = settings_validator.BaseConfig(**yaml.safe_load(open(settings)))
         self.load_settings(self.settings)
 
     def load_settings(self, settings):
@@ -114,7 +106,7 @@ class Backend:
     def init_next_iteration(self):
         if self.settings.de_novo_model is not None:
             shutil.copy2(
-                f"{PKGDIR}/reinvent_connect/input_files/current_run/Agent.ckpt",
+                f"{PKGDIR}/resources/input_files/current_run/Agent.ckpt",
                 f"{self.results_path}/iteration_{self.iteration}/Agent.ckpt",
             )
         self.inner_iteration = 0
@@ -123,7 +115,7 @@ class Backend:
         self.next_iteration_signal.finished.emit()
 
     def clear_temp_images(self, files_only: bool = False):
-        self._temp_image_folder = f"{PKGDIR}/utils/temp_images/"
+        self._temp_image_folder = f"{PKGDIR}/resources/temp_images/"
 
         if os.path.exists(self._temp_image_folder):
             if files_only:
@@ -323,7 +315,7 @@ class Backend:
             self._saveResultsCSV(results_df)
             dict_list = self._createDictList(results_df)
             self.RFTrainer.save_model(
-                f"{PKGDIR}/reinvent_connect/input_files/current_run/Model.pkl"
+                f"{PKGDIR}/resources/input_files/current_run/Model.pkl"
             )
             self.RFTrainer.save_model(
                 f"{self.results_path}/iteration_{self.iteration}/Model.pkl"

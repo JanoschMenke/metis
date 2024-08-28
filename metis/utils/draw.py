@@ -10,7 +10,7 @@ from cairosvg import svg2png
 import os
 from typing import Dict, List
 from functools import partial
-from metis.utils.data import sample_training_data
+from metis.core.data import sample_training_data
 
 from PySide6.QtCore import QObject, Signal, Slot, QRunnable
 from PySide6 import QtCore
@@ -84,7 +84,7 @@ def save_explanation_map(
 
     svg2png(
         bytestring=svg,
-        write_to=f"{PKGDIR}/utils/temp_images/{save_name if save_name is not None else 'output.png'}",
+        write_to=f"{PKGDIR}/resources/temp_images/{save_name if save_name is not None else 'output.png'}",
     )
 
 
@@ -118,7 +118,7 @@ def save_most_similar_active_map(
     )
 
     grid_img.save(
-        f"{PKGDIR}/utils/temp_images/{save_name if save_name is not None else 'grid_image.png'}"
+        f"{PKGDIR}/resources/temp_images/{save_name if save_name is not None else 'grid_image.png'}"
     )
 
 

@@ -8,11 +8,8 @@ from rdkit.Chem.rdMolDescriptors import GetMorganFingerprint
 from rdkit.Chem import DataStructs, MACCSkeys
 from datetime import datetime
 from typing import List, Dict
-from metis.reinvent_connect import train_rf as trf
 import os
 import shutil
-from pathlib import Path
-import warnings
 from typing import Tuple
 
 

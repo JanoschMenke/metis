@@ -10,12 +10,14 @@ from PySide6.QtGui import *
 
 from PySide6.QtWidgets import *
 from PySide6.QtWidgets import QApplication
-from PySide6 import QtCore, QtGui, QtWidgets, QtSvg
+from PySide6 import QtCore, QtWidgets
 
 import argparse
-from metis.backend import Backend
-from metis.utils import interactionWidgets, molwall, helper, rdeditor_wrapper
-from metis.utils.data import sample_training_data
+from metis.core import Backend
+from metis.config.settings import load_settings, BaseConfig
+from metis.ui import widgets, molwall, interactionWidgets
+from metis.utils import helper, rdeditor_wrapper
+from metis.core.data import sample_training_data
 
 from rdeditor import molEditWidget
 
@@ -34,10 +36,14 @@ from sys import platform
 class Metis(QtWidgets.QMainWindow):
     # Constructor function
     def __init__(
-        self, settings_file: str, output_folder: str, fileName=None, loglevel="WARNING"
+        self,
+        settings: BaseConfig,
+        output_folder: str,
+        fileName=None,
+        loglevel="WARNING",
     ):
         super(Metis, self).__init__()
-        self.backend = Backend(settings_file, output_folder)
+        self.backend = Backend(settings, output_folder)
         self.setSize()  # set size of main window
         self.loglevels = []
 
@@ -98,7 +104,7 @@ class Metis(QtWidgets.QMainWindow):
         self.setWindowTitle("Metis")
         self.setWindowIcon(QIcon(self.backend.designPath + "logo.png"))
         self.setMainLayout()  # responsible for holding molviewer and evaluation
-        self.molCounter = interactionWidgets.molCounter(self.backend.numMols)
+        self.molCounter = widgets.molCounter(self.backend.numMols)
         self.init_navigationbar()
         self.setCentralLayout()
         self.loadEvaluations()
@@ -127,7 +133,7 @@ class Metis(QtWidgets.QMainWindow):
     def setGlobalLayout(self):
         globallayout = QtWidgets.QVBoxLayout()
         globallayout.addLayout(self.mainlayout)
-        globallayout.addWidget(interactionWidgets.QHLine())
+        globallayout.addWidget(widgets.QHLine())
         globallayout.addWidget(self.navigation)
         globallayout.addWidget(self.molCounter)
         return globallayout
@@ -141,7 +147,7 @@ class Metis(QtWidgets.QMainWindow):
     # INITIALIZE COMPONENTS
     # connects widgets and their buttons with functions
     def init_navigationbar(self):
-        self.navigation = interactionWidgets.navigationBar(
+        self.navigation = widgets.navigationBar(
             self.backend.settings.ui.navigationbar.dict()
         )
         self.navigation.directionSignal.connect(self.onMyToolBarButtonClick)
@@ -393,18 +399,19 @@ def launch(loglevel="WARNING"):
         print()
         parser.print_help()
         sys.exit(1)
-    print("here")
-    myApp = QApplication(sys.argv)
 
+    myApp = QApplication(sys.argv)
+    settings: BaseConfig = load_settings(args.file)
     mainWindow = Metis(
-        args.file,
+        settings,
         output_folder=args.output,
         fileName=args.file,
         loglevel=loglevel,
     )
-    print("here")
 
-    stylesheet = helper.read_and_replace_css(f"{PKGDIR}/design/style.css", PKGDIR)
+    stylesheet = helper.read_and_replace_css(
+        f"{PKGDIR}/resources/design/style.css", PKGDIR
+    )
     myApp.setStyleSheet(stylesheet)
     myApp.exec_()
 
