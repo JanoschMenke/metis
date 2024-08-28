@@ -48,21 +48,21 @@ QTabWidget {
 
 QCheckBox::indicator:checked,
 QGroupBox::indicator:checked {
-    image: url(__PACKAGE_DIR__/design/checkbox-checked.svg);
+    image: url(__PACKAGE_DIR__/resources/design/checkbox-checked.svg);
     max-height: 10px;
 }
 
 
 QCheckBox::indicator:indeterminate,
 QGroupBox::indicator:indeterminate {
-    image: url(__PACKAGE_DIR__/design/checkbox_checked_neg.svg);
+    image: url(__PACKAGE_DIR__/resources/design/checkbox_checked_neg.svg);
     max-height: 10px;
 }
 
 
 QCheckBox::indicator:unchecked,
 QGroupBox::indicator:unchecked {
-    image: url(__PACKAGE_DIR__/design/checkbox-unchecked.svg);
+    image: url(__PACKAGE_DIR__/resources/design/checkbox-unchecked.svg);
     max-height: 10px;
 }
 
