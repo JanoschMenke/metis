@@ -1,4 +1,4 @@
-ssh_login: "your remote machien"
+ssh_login: "your remote machine"
 path_remote_folder: "path/to/metis_reinvent"
 de_novo_json: "de_novo_files/initial_reinvent.json"
 default_slurm: "de_novo_files/standard_slurm.slurm"

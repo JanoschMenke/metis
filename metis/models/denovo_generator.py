@@ -1,15 +1,22 @@
-# %%
-import subprocess as sb
 import copy
 import json
+import logging
 import os
-from metis.utils.helper import get_random_string
-from metis.core.data import extract_and_process_liabilities
 import time
-from PySide6.QtCore import QObject, Signal, Slot, QRunnable
+
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import paramiko
 import yaml
-import copy
+from PySide6.QtCore import QObject, QRunnable, Signal, Slot
+
 from metis import PKGDIR
+from metis.utils.helper import get_random_string
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class WorkerSignals(QObject):
@@ -45,9 +52,10 @@ class Worker(QRunnable):
 
     @Slot()
     def run(self):
-        print("Run on Core")
+        logger.debug("Worker Started De Novo Run")
         self.de_novo_runner.run(self.activity_label, self.output_path, self.dict)
         self.signals.finished.emit()
+        logger.debug("Worker Finished De Novo Run")
 
 
 class DeNovoRunner:
@@ -55,6 +63,12 @@ class DeNovoRunner:
         self.cwd = f"{PKGDIR}/resources"
         self.settings = de_novo_config
         self.ssh_settings = yaml.safe_load(open(self.settings.ssh_settings))
+        self.remote_executor = RemoteExecutor(
+            hostname=self.ssh_settings["hostname"],
+            username=self.ssh_settings["username"],
+            password=self.ssh_settings.get("password"),
+            key_filename=self.ssh_settings.get("key_filename"),
+        )
         self.slurm_path = self.ssh_settings["path_remote_folder"]
         self.run_name = get_random_string(8)
         with open(self.ssh_settings["de_novo_json"]) as og_file:
@@ -62,8 +76,10 @@ class DeNovoRunner:
 
         self.agent_path = None
         self.model_path = None
+        logger.info("DeNovoRunner initialized")
 
     def gen_denovo_file(self, activity_label: str, human_component=None):
+        logger.debug(f"Generating de novo file for activity label: {activity_label}")
         file_contents = copy.deepcopy(self.og_json_contents)
         if os.path.isfile(f"{self.cwd}/input_files/current_run/Agent.ckpt"):
             file_contents["parameters"]["reinforcement_learning"][
@@ -104,49 +120,62 @@ class DeNovoRunner:
         file_contents["parameters"]["scoring_function"]["parameters"] = component_list
         with open(f"{self.cwd}/input_files/current_run/new_run.json", "w") as outfile:
             json.dump(file_contents, outfile, sort_keys=True, indent=4)
+        logger.debug("Reinvent .json file generated successfully")
 
     def run(self, activity_label: str, output_path: str, human_component=None):
+        logger.info(f"Starting de novo run for activity label: {activity_label}")
         self.gen_denovo_file(activity_label, human_component=human_component)
 
-        generate_slurm_file(
+        self.generate_slurm_file(
             f"{self.cwd}/input_files/current_run/new_run.slurm",
-            self.ssh_settings["default_slurm"],
-            self.slurm_path,
-            run_name=self.run_name,
         )
 
-        start_remote_run(
-            self.ssh_settings["ssh_login"],
-            f"{self.cwd}/input_files/current_run/new_run.slurm",
-            f"{self.cwd}/input_files/current_run/new_run.json",
-            self.slurm_path,
-            self.model_path,
-            self.agent_path,
-        )
+        try:
+            self.remote_executor.connect()
+            local_files = [
+                f"{self.cwd}/input_files/current_run/new_run.slurm",
+                f"{self.cwd}/input_files/current_run/new_run.json",
+                self.model_path,
+                self.agent_path,
+            ]
+            local_files = [f for f in local_files if f is not None]
+            self.remote_executor.transfer_files_to_remote(local_files, self.slurm_path)
 
-        print("Slurmjob Submitted")
-        check_reinvent_status(
-            self.ssh_settings["ssh_login"], self.slurm_path, start=True
-        )
-        print("Training has Started")
-        check_reinvent_status(
-            self.ssh_settings["ssh_login"], self.slurm_path, start=False
-        )
-        print("Reinvent Finished")
+            command = f"cd {self.slurm_path}; sbatch new_run.slurm"
+            stdout, stderr = self.remote_executor.execute_remote_command(command)
+            if stderr:
+                logger.error(f"Error submitting job: {stderr}")
+                return
 
-        # checks if the file "scaffold_memory.csv" exists in the specified directory
-        # `slurm_path/results`. If the file exists, it uses the `scp` command to copy the file from the remote
-        # server to the local `../data/` directory. It also copies the file "Agent.ckpt" from the remote
-        # server to the local `reinvent_connect/resources/current_run/` directory.
-        if check_if_results_exist(
-            self.ssh_settings["ssh_login"], self.slurm_path, "scaffold_memory.csv"
-        ):
-            os.system(
-                f"scp {self.ssh_settings['ssh_login']}:{self.slurm_path}/results/scaffold_memory.csv {output_path}"
-            )
-            os.system(
-                f"scp {self.ssh_settings['ssh_login']}:{self.slurm_path}/results/Agent.ckpt {self.cwd}/input_files/current_run/"
-            )
+            logger.info("Slurm job submitted")
+            self.remote_executor.check_reinvent_status(start=True)
+            logger.info("Training has started")
+            self.remote_executor.check_reinvent_status(start=False)
+            logger.info("Reinvent finished")
+
+            if self.remote_executor.check_if_results_exist("scaffold_memory.csv"):
+                self.remote_executor.transfer_files_from_remote(
+                    [f"{self.slurm_path}/results/scaffold_memory.csv"], output_path
+                )
+                self.remote_executor.transfer_files_from_remote(
+                    [f"{self.slurm_path}/results/Agent.ckpt"],
+                    f"{self.cwd}/input_files/current_run/",
+                )
+                logger.info("Results transferred successfully")
+            else:
+                logger.warning("Results file not found on remote server.")
+
+        finally:
+            self.remote_executor.disconnect()
+            logger.info("Remote connection closed")
+
+    def generate_slurm_file(self, slurm_file_name):
+        logger.debug(f"Generating SLURM file: {slurm_file_name}")
+        with open(self.ssh_settings["default_slurm"]) as f:
+            text = f.read()
+        with open(slurm_file_name, "w") as rsh:
+            rsh.write(text.format(slurm_path=self.slurm_path, run_name=self.run_name))
+        logger.info("SLURM file generated successfully")
 
 
 def generate_substruct_flag(substruct_dict):
@@ -163,92 +192,91 @@ def generate_substruct_flag(substruct_dict):
         [list(substruct_dict[name]) for name in substruct_dict], []
     )
     component_list.append(copy.deepcopy(component_custom_alerts))
-    #    for name in substruct_dict:
-    #        component_custom_alerts["name"] = f"alerts"
-    #        component_custom_alerts["specific_parameters"]["smiles"] = substruct_dict[name]
-    #        component_list.append(copy.deepcopy(component_custom_alerts))
-
     return component_list
-
-
-def generate_slurm_file(
-    slurm_file_name: str, from_file: str, slurm_path: str, run_name: str
-):
-    """
-    The function `generate_slurm_file` generates a SLURM file by reading from a template file and
-    replacing placeholders with provided values.
-    """
-    with open(from_file) as f:
-        text = f.read()
-    with open(slurm_file_name, "w") as rsh:
-        rsh.write(text.format(**locals()))
-
-
-def start_remote_run(
-    ssh_login: str,
-    slurm_file: str,
-    json_file: str,
-    slurm_path: str,
-    model: str = None,
-    agent: str = None,
-):
-    """
-    The function `start_remote_run` submits a job to a remote server using SLURM and transfers necessary
-    files to the server.
-
-    Args:
-        ssh_login: (str):  ssh login you need to have a password free login
-        slurm_file (str):  path to the SLURM script file that will be used to submit the job to the
-                           remote cluster
-        json_file (str):   path to a JSON file that contains Reinvent configuration settings
-        slurm_path (str): path to the directory where the SLURM files and other necessary files will
-                          be copied to on the remote machine
-        model (str, optional): path to a file containing the model that will be used in the remote run.
-                               Defaults to None.
-        agent (str, optional): path to agent used in a remote run. Defaults to None.
-
-
-    """
-    print("Submitting Job")
-    os.system(f"scp {slurm_file} {ssh_login}:{slurm_path}")
-    os.system(f"scp {json_file} {ssh_login}:{slurm_path}")
-
-    if model is not None:
-        os.system(f"scp {model} {ssh_login}:{slurm_path}")
-    if agent is not None:
-        os.system(f"scp {agent} {ssh_login}:{slurm_path}")
-
-    command2 = f"sbatch {slurm_path}/new_run.slurm"
-    command = f"cd {slurm_path};{command2}"
-    result = sb.run(
-        ["ssh", ssh_login, command],
-        shell=False,
-        stdout=sb.PIPE,
-        stderr=sb.PIPE,
-        check=True,
-    )
-    return True
-
-
-def check_reinvent_status(ssh_login, path, start=False, sleepTime=10):
-    # use start to check whether the job has started
-    # checks whether the scaffold_memory.csv has been removed
-    finished = start
-    while finished == start:
-        finished = check_if_results_exist(ssh_login, path, file="memory.csv")
-        print("Wait ...")
-        time.sleep(sleepTime)
-    return True
-
-
-def check_if_results_exist(ssh_login, path, file):
-    available = sb.call(["ssh", ssh_login, f"test -f {path}/results/{file}"])
-    if available == 0:
-        return True
-    if available == 1:
-        return False
 
 
 def generate_inception(smiles):
     inception = {"memory_size": 20, "sample_size": 5, "smiles": smiles}
     return inception
+
+
+class RemoteExecutor:
+    def __init__(
+        self,
+        hostname: str,
+        username: str,
+        password: Optional[str] = None,
+        key_filename: Optional[str] = None,
+        slurm_path: Optional[str] = None,
+    ):
+        self.hostname: str = hostname
+        self.username: str = username
+        self.password: Optional[str] = password
+        self.key_filename: Optional[str] = key_filename
+        self.ssh_client: Optional[paramiko.SSHClient] = None
+        self.sftp_client: Optional[paramiko.SFTPClient] = None
+        self.slurm_path: Optional[str] = slurm_path
+        logger.info(f"RemoteExecutor initialized for {username}@{hostname}")
+
+    def connect(self) -> None:
+        logger.debug("Connecting to remote server")
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        connect_kwargs: Dict[str, str] = {
+            "hostname": self.hostname,
+            "username": self.username,
+        }
+        if self.password:
+            connect_kwargs["password"] = self.password
+        elif self.key_filename:
+            connect_kwargs["key_filename"] = self.key_filename
+
+        self.ssh_client.connect(**connect_kwargs)
+        self.sftp_client = self.ssh_client.open_sftp()
+        logger.info("Connected to remote server")
+
+    def disconnect(self) -> None:
+        logger.debug("Disconnecting from remote server")
+        if self.sftp_client:
+            self.sftp_client.close()
+        if self.ssh_client:
+            self.ssh_client.close()
+        logger.info("Disconnected from remote server")
+
+    def transfer_files_to_remote(self, local_files: List[str], remote_dir: str) -> None:
+        logger.debug(f"Transferring files to remote: {local_files}")
+        for local_file in local_files:
+            remote_path: str = f"{remote_dir}/{Path(local_file).name}"
+            self.sftp_client.put(local_file, remote_path)
+        logger.info(f"Transferred {len(local_files)} files to remote server")
+
+    def transfer_files_from_remote(
+        self, remote_files: List[str], local_dir: str
+    ) -> None:
+        logger.debug(f"Transferring files from remote: {remote_files}")
+        for remote_file in remote_files:
+            local_path: str = os.path.join(local_dir, Path(remote_file).name)
+            self.sftp_client.get(remote_file, local_path)
+        logger.info(f"Transferred {len(remote_files)} files from remote server")
+
+    def execute_remote_command(self, command: str) -> Tuple[str, str]:
+        logger.debug(f"Executing remote command: {command}")
+        stdin, stdout, stderr = self.ssh_client.exec_command(command)
+        return stdout.read().decode(), stderr.read().decode()
+
+    def check_reinvent_status(self, start: bool = False, sleep_time: int = 10) -> bool:
+        logger.debug(f"Checking Reinvent status, start={start}")
+        finished: bool = start
+        while finished == start:
+            finished = self.check_if_results_exist("memory.csv")
+            logger.info("Waiting for Reinvent to finish...")
+            time.sleep(sleep_time)
+        return True
+
+    def check_if_results_exist(self, file: str) -> bool:
+        logger.debug(f"Checking if file exists on remote: {file}")
+        stdout, stderr = self.execute_remote_command(
+            f"test -f {self.slurm_path}/results/{file}"
+        )
+        return stderr == ""
