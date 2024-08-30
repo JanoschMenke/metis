@@ -16,7 +16,7 @@ from metis.utils.helper import get_random_string
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class WorkerSignals(QObject):
@@ -68,6 +68,7 @@ class DeNovoRunner:
             username=self.ssh_settings["username"],
             password=self.ssh_settings.get("password"),
             key_filename=self.ssh_settings.get("key_filename"),
+            slurm_path=self.ssh_settings["path_remote_folder"],
         )
         self.slurm_path = self.ssh_settings["path_remote_folder"]
         self.run_name = get_random_string(8)
@@ -86,6 +87,7 @@ class DeNovoRunner:
                 "agent"
             ] = f"{self.slurm_path}/Agent.ckpt"
             self.agent_path = f"{self.cwd}/input_files/current_run/Agent.ckpt"
+            logger.debug(f"New Agent found: {self.agent_path}")
         else:
             file_contents["parameters"]["reinforcement_learning"][
                 "agent"
@@ -141,25 +143,18 @@ class DeNovoRunner:
             local_files = [f for f in local_files if f is not None]
             self.remote_executor.transfer_files_to_remote(local_files, self.slurm_path)
 
-            command = f"cd {self.slurm_path}; sbatch new_run.slurm"
-            stdout, stderr = self.remote_executor.execute_remote_command(command)
-            if stderr:
-                logger.error(f"Error submitting job: {stderr}")
-                return
+            slurm_job_id = self.remote_executor.submit_job()
+            self.remote_executor.wait_for_job_completion(slurm_job_id)
 
-            logger.info("Slurm job submitted")
-            self.remote_executor.check_reinvent_status(start=True)
-            logger.info("Training has started")
-            self.remote_executor.check_reinvent_status(start=False)
-            logger.info("Reinvent finished")
-
-            if self.remote_executor.check_if_results_exist("scaffold_memory.csv"):
-                self.remote_executor.transfer_files_from_remote(
+            if self.remote_executor.check_remote_file_exists(
+                f"{self.slurm_path}/results/scaffold_memory.csv"
+            ):
+                self.remote_executor.transfer_file_from_remote(
                     [f"{self.slurm_path}/results/scaffold_memory.csv"], output_path
                 )
-                self.remote_executor.transfer_files_from_remote(
+                self.remote_executor.transfer_file_from_remote(
                     [f"{self.slurm_path}/results/Agent.ckpt"],
-                    f"{self.cwd}/input_files/current_run/",
+                    f"{self.cwd}/input_files/current_run/Agent.ckpt",
                 )
                 logger.info("Results transferred successfully")
             else:
@@ -251,32 +246,62 @@ class RemoteExecutor:
             self.sftp_client.put(local_file, remote_path)
         logger.info(f"Transferred {len(local_files)} files to remote server")
 
-    def transfer_files_from_remote(
-        self, remote_files: List[str], local_dir: str
+    def transfer_file_from_remote(
+        self, remote_files: List[str], local_path: str
     ) -> None:
         logger.debug(f"Transferring files from remote: {remote_files}")
         for remote_file in remote_files:
-            local_path: str = os.path.join(local_dir, Path(remote_file).name)
             self.sftp_client.get(remote_file, local_path)
         logger.info(f"Transferred {len(remote_files)} files from remote server")
 
     def execute_remote_command(self, command: str) -> Tuple[str, str]:
         logger.debug(f"Executing remote command: {command}")
         stdin, stdout, stderr = self.ssh_client.exec_command(command)
-        return stdout.read().decode(), stderr.read().decode()
+        return stdout.read().decode().strip(), stderr.read().decode().strip()
 
-    def check_reinvent_status(self, start: bool = False, sleep_time: int = 10) -> bool:
-        logger.debug(f"Checking Reinvent status, start={start}")
-        finished: bool = start
-        while finished == start:
-            finished = self.check_if_results_exist("memory.csv")
-            logger.info("Waiting for Reinvent to finish...")
-            time.sleep(sleep_time)
-        return True
+    def check_remote_file_exists(self, file_path: str) -> bool:
+        """
+        Check if a file exists on the remote machine.
 
-    def check_if_results_exist(self, file: str) -> bool:
-        logger.debug(f"Checking if file exists on remote: {file}")
-        stdout, stderr = self.execute_remote_command(
-            f"test -f {self.slurm_path}/results/{file}"
-        )
-        return stderr == ""
+        :param file_path: The path of the file to check on the remote machine
+        :return: True if the file exists, False otherwise
+        """
+        command = f'[ -e "{file_path}" ] && echo "1" || echo "0"'
+        stdout, stderr = self.execute_remote_command(command)
+
+        if stderr:
+            logger.error(f"Error checking file existence: {stderr}")
+            return False
+
+        return stdout.strip() == "1"
+
+    def get_job_status(self, job_id: str) -> str:
+        command = f"squeue -j {job_id} -h -o %t"
+        status, error = self.execute_remote_command(command)
+        if error:
+            raise Exception(f"Error getting job status: {error}")
+
+        if status:
+            return status
+        else:
+            # If the job is not in the queue, it's likely completed
+            return "COMPLETED"
+
+    def wait_for_job_completion(self, job_id: str, check_interval: int = 10) -> None:
+        while True:
+            status = self.get_job_status(job_id)
+            if status == "COMPLETED":
+                logger.info("Reinvent finished.")
+                break
+            logger.info(f"Reinvent Job {job_id} status: {status}. Waiting...")
+            time.sleep(check_interval)
+
+    def submit_job(self) -> str:
+        command = f"cd {self.slurm_path}; sbatch new_run.slurm"
+        stdout, stderr = self.execute_remote_command(command)
+        if stderr:
+            raise Exception(f"Error submitting job: {stderr}")
+        logger.info("Slurm job submitted")
+        # Extract job ID from stdout (typical format: "Submitted batch job 123456")
+        job_id = stdout.split()[-1]
+        return job_id
