@@ -30,8 +30,16 @@ You can find the preprint at [ChemRxiv](https://chemrxiv.org/engage/chemrxiv/art
 
 Download the repository and navigate to the download location. You can install `metis` with `pip install .`. Make sure the environment you want to install into is activated and has python `>= 3.9, <3.11` installed.
 
+If you wish to use [REINVENT 3](https://github.com/MolecularAI/Reinvent
+) in the backend, also install REINVENT 3 on a remote machine.
+
+
 #### Dependencies
 Some notes on the dependencies. 
+
+**PySide 2**
+
+Getting the environment set up with PySide2 can be somewhat challenging. It is planned to move to PySide6. There already exists a branch for it, which you can try out. It works but has not yet completely been tested.
 
 **scikit-learn**
 
@@ -101,9 +109,9 @@ With these settings, a REINVENT de novo run can be started directly using `Metis
 The remote machine needs:
 - a working installation of REINVENT 3. 
 - update the REINVENTS scikit-learn to >1.0.0
-- Wlurm
+- Slurm
 - access through SSH wih a key
-- the unzipped `metis_reinvent.zip` folder
+- the unzipped `example_project/metis_reinvent.zip` folder
 
 Once copied and unzipped, the paths and settings in the `de_novo_files` folder need to be adapted to fit to your paths on the remote machine.
 ```

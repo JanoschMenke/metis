@@ -1,7 +1,8 @@
 [project]
 name = "metis"
-version = "0.1.0"
+version = "1.0.0"
 description = "A Grpahical User Interface to collect human feedback on molecular structures."
+keywords = ["de-novo-design", "human-in-the-loop", "GUI"]
 authors = [
   { name = "Janosch Menke", email = "janosch.menke.research@proton.me" },
   { name = "Yasmine Nahal" },
@@ -21,6 +22,9 @@ dependencies = [
   "pyyaml",
   "rdeditor",
 ]
+
+[project.urls]
+homepage = "https://github.com/JanoschMenke/metis"
 
 [build-system]
 requires = ["setuptools>=61.2", "wheel"]
