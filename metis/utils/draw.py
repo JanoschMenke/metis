@@ -5,7 +5,8 @@ import numpy as np
 import io
 from PIL import Image
 import pickle
-from PySide6.QtCore import QByteArray
+from PySide6.QtCore import QBuffer, QIODevice, Qt
+from PySide6.QtGui import QPixmap, QImage
 from cairosvg import svg2png
 import os
 from typing import Dict, List
@@ -68,7 +69,6 @@ def plot_explanation_map(mol, model, ecfp_settings: Dict):
 def save_explanation_map(
     model_path,
     smiles,
-    save_name: str = None,
     ecfp_settings: Dict = {"radius": 2, "bitSize": 2048, "useCounts": False},
 ):
     if type(model_path) == str:
@@ -82,15 +82,15 @@ def save_explanation_map(
             Chem.MolFromSmiles(smiles), model_path, ecfp_settings=ecfp_settings
         )
 
-    svg2png(
+    png_data = svg2png(
         bytestring=svg,
-        write_to=f"{PKGDIR}/resources/temp_images/{save_name if save_name is not None else 'output.png'}",
     )
+    image = QImage()
+    image.loadFromData(png_data, "PNG")
+    return image
 
 
-def save_most_similar_active_map(
-    trainings_data_path: str, current_smiles: str, save_name: str = None
-):
+def save_most_similar_active_map(trainings_data_path: str, current_smiles: str):
     mol_list = []
     smiles, molInfo = sample_training_data(
         path_training_data=trainings_data_path,  # ,
@@ -117,36 +117,54 @@ def save_most_similar_active_map(
         returnPNG=False,
     )
 
-    grid_img.save(
-        f"{PKGDIR}/resources/temp_images/{save_name if save_name is not None else 'grid_image.png'}"
-    )
+    return convert_to_qimage(grid_img)
+
+
+def convert_to_qimage(pil_image) -> QImage:
+    img_buffer = io.BytesIO()
+    pil_image.save(img_buffer, format="PNG")
+    img_data = img_buffer.getvalue()
+
+    q_buffer = QBuffer()
+    q_buffer.open(QIODevice.ReadWrite)
+    q_buffer.write(img_data)
+    q_buffer.seek(0)
+
+    qimage = QImage()
+    qimage.loadFromData(q_buffer.data(), "PNG")
+    return qimage
+
+
+def create_mol_image(smiles: str):
+    img = Draw.MolToImage(Chem.MolFromSmiles(smiles), size=(240, 240), canvas=None)
+    qimg = convert_to_qimage(img)
+    return QPixmap.fromImage(qimg)
 
 
 def set_image(
-    image_folder_path,
     image_type: str,
     index: int,
     smiles,
     data_path,
     ecfp_settings=None,
 ):
+    if image_type == "mostSimilarActives":
 
-    if not os.path.isfile(f"{image_folder_path}{image_type}{index}.png"):
-        if image_type == "mostSimilarActives":
-            save_most_similar_active_map(
-                data_path,
-                smiles,
-                save_name=f"{image_type}{index}.png",
-            )
+        image = save_most_similar_active_map(
+            data_path,
+            smiles,
+        )
 
-        elif image_type == "atomContribution":
-            save_explanation_map(
-                data_path,
-                smiles,
-                save_name=f"{image_type}{index}.png",
-                ecfp_settings=ecfp_settings,
-            )
-    pixmap = QPixmap(f"{image_folder_path}{image_type}{index}.png")
+    elif image_type == "atomContribution":
+        image = save_explanation_map(
+            data_path,
+            smiles,
+            ecfp_settings=ecfp_settings,
+        )
+    else:
+        raise ValueError(f"Invalid image_type: {image_type}")
+
+    pixmap = QPixmap.fromImage(image)
     pixmap = pixmap.scaled(
         600,
         600,

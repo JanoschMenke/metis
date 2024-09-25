@@ -3,10 +3,10 @@ from PySide6 import QtWidgets, QtCore
 from metis.ui.widgets import (
     generalRating,
     TPProfile,
-    multiSelect,
+    multiSelectWidget,
     selectLocalSubstructures,
 )
-from PySide6.QtCore import Qt
+from typing import Dict
 
 
 class evaluationWindow(QtWidgets.QWidget):
@@ -25,69 +25,12 @@ class evaluationWindow(QtWidgets.QWidget):
         self.layout.addWidget(self.evaluationWidget)
         self.setLayout(self.layout)
 
-    def mousePressEvent(self, event):
-        self.substructButtonDict["other"].clearFocus()
-
-    @property
-    def initialLiability(self):
-        name = self.getTabName()
-        return self.evaluationWidget.localEvaluation[name]._initialLiability
-
-    @property
-    def substructButtonDict(self):
-        name = self.getTabName()
-        return self.evaluationWidget.localEvaluation[name].buttonDict
-
-    @property
-    def substructTransButton(self):
-        name = self.getTabName()
-        return self.evaluationWidget.localEvaluation[name].transparentButton
-
-    @property
-    def globalRatings(self):
-        return self.evaluationWidget.globalInteractionWindow.getRatings()
-
-    @property
-    def textInOther(self):
-        return self.substructButtonDict["other"].text()
-
-    def getTextInOther(self, tab_name):
-        return (
-            self.evaluationWidget.localEvaluation[tab_name].buttonDict["other"].text()
-        )
-
-    def getTabIndex(self) -> int:
-        if self.uses_tab:
-            idx = self.evaluationWidget.tab.currentIndex()
-        else:
-            idx = 0
-        return idx
-
-    @property
-    def localEvaluations(self):
-        return self.evaluationWidget.localEvaluation
-
-    def getTabName(self) -> str:
-        idx = self.getTabIndex()
-        name = list(self.evaluationWidget.localEvaluation)[idx]
-        return name
-
-    def setRatings(self, ratingMolecule, concernsMolecule):
-        self.evaluationWidget.globalInteractionWindow.setRatings(
-            ratingMolecule, concernsMolecule
-        )
-
-    def resetOtherText(self):
-        self.setOtherText("Other?")
-
-    def setOtherText(self, text):
-        self.substructButtonDict["other"].setText(text)
-
-    def updateProperties(self, dict):
-        self.TPPDispay.updateMolProperties(dict)
-
 
 class stackedWidget(QtWidgets.QWidget):
+    tab_changed = QtCore.Signal(str)
+    local_liability_changed = QtCore.Signal(str)
+    text_in_other_changed = QtCore.Signal(str)
+
     def __init__(self, settings):
         super(stackedWidget, self).__init__()
 
@@ -129,6 +72,17 @@ class stackedWidget(QtWidgets.QWidget):
                 )
             }
 
+        for name in self.localEvaluation:
+            self.localEvaluation[name].sanitizeSignal.connect(self.on_liability_change)
+            self.localEvaluation[name].other_text_changed.connect(
+                self.on_other_text_change
+            )
+            self.local_liability_changed.connect(
+                self.localEvaluation[name].set_active_button
+            )
+
+        self.tab.currentChanged.connect(self.onTabChanged)
+
         self.text3 = QLabel("Any feedback on specific substructures?")
         self.text3.setWordWrap(True)
         self.text3.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignCenter)
@@ -148,6 +102,18 @@ class stackedWidget(QtWidgets.QWidget):
         pageLayout.setRowStretch(3, 0)
 
         self.setLayout(pageLayout)
+
+    def onTabChanged(self, index):
+        new_tab_name = self.tab.tabText(index)
+        print(f"Tab changed to index {new_tab_name}")
+        # Emit our custom signal with the new tab name
+        self.tab_changed.emit(new_tab_name)
+
+    def on_liability_change(self, new_liability: str):
+        self.local_liability_changed.emit(new_liability)
+
+    def on_other_text_change(self, new_text: str):
+        self.text_in_other_changed.emit(new_text)
 
     def checkRender(self, settings):
         if settings["ui"]["general"]["render"] == False:
@@ -177,7 +143,7 @@ class generalEvaluation(QtWidgets.QWidget):
         self.sliderModule.setMaximumSize(800, 200)
 
         layout.addWidget(self.sliderModule)
-        self.listwidget = multiSelect(
+        self.listwidget = multiSelectWidget.MultiSelect(
             settings["ui"]["global_properties"]["liabilities"]
         )
         self.listwidget.setMaximumSize(900, 100)
@@ -186,31 +152,16 @@ class generalEvaluation(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
-    def getRatings(self):
+    @property
+    def eval_score(self) -> Dict[str, int]:
         "returns the users rating of the molecule"
-        ratingMolecule = self.sliderModule.currentPressed
-        concernsMolecule = [
-            int(self.listwidget.rowCheckboxes.itemAt(i).widget().checkState().value)
-            for i in range(len(self.listwidget.labelsCheckbox))
-        ]
-        return ratingMolecule, concernsMolecule
+        ratingMolecule = self.sliderModule.eval_score
+        concernsMolecule = self.listwidget.eval_score
+        concernsMolecule["general"] = ratingMolecule
+        return concernsMolecule
 
-    def setRatings(self, ratingMolecule, concernsMolecule):
-        self.sliderModule.setSavedButton(ratingMolecule)
-        self.sliderModule.currentPressed = ratingMolecule
+    def setRatings(self, ratingMolecule: int, concernsMolecule: Dict[str, int]) -> None:
+        self.sliderModule.eval_score = ratingMolecule
+        self.listwidget.eval_score = concernsMolecule
 
         # for loop to set the checkbox to the saved state, default: off/0
-        [
-            self.listwidget.rowCheckboxes.itemAt(i)
-            .widget()
-            .setCheckState(self.__getQStates(concernsMolecule[i]))
-            for i in range(len(concernsMolecule))
-        ]
-
-    def __getQStates(self, value):
-        if value == 0:
-            return Qt.CheckState.Unchecked
-        elif value == 1:
-            return Qt.CheckState.PartiallyChecked
-        else:
-            return Qt.CheckState.Checked

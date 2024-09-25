@@ -7,7 +7,7 @@ import copy
 from typing import List, Dict
 
 
-class metis_tracker:
+class MetisTracker:
     def __init__(self):
         self.substructure_dict = {"desired": {}, "alerts": {}}
         self.smiles_dict = {"desired": [], "alerts": [], "somewhat": []}

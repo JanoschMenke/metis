@@ -2,9 +2,6 @@ from PySide6 import QtWidgets, QtGui, QtCore
 
 
 class navigationBar(QtWidgets.QWidget):
-    """
-    Combines multiple Checkboxes into a single Widget
-    """
 
     directionSignal = QtCore.Signal(int)
     openWindowSignal = QtCore.Signal(str)
@@ -37,6 +34,7 @@ class navigationBar(QtWidgets.QWidget):
         mainLayout.addWidget(self.sendButton)
         mainLayout.addWidget(self.unratedMolecule)
         mainLayout.addWidget(self.nextButton)
+
         if settings["sendButton"]["render"] == False:
             self.sendButton.hide()
         if settings["editButton"]["render"] == False:

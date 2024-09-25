@@ -6,9 +6,12 @@ from metis.utils import (
     draw,
 )
 from metis.config.settings import BaseConfig
-from metis.models import random_forest as trf, denovo_generator as tr
+from metis.models.random_forest import trainRF
+from metis.models.denovo_generator import DeNovoRunner, WorkerSignals, Worker
+from metis.utils.tracker import MetisTracker
+from metis import PKGDIR
 
-from PySide6.QtCore import QThreadPool
+from PySide6.QtCore import QThreadPool, QObject, Signal
 import os
 from os.path import join
 import pickle
@@ -16,29 +19,128 @@ import numpy as np
 from rdkit import Chem
 import shutil
 import pandas as pd
-from typing import List, Dict
-from metis import PKGDIR
+from typing import List, Dict, Optional, Any, Tuple
+from dataclasses import dataclass
 
 
-class Backend:
-    def __init__(self, settings: BaseConfig, results_folder: str):
+@dataclass(frozen=True)
+class MoleculeData:
+    smiles: str
+    properties: Dict[str, float]
+    evaluation: Optional[Dict[str, Any]] = None
+    additional_info: Optional[Dict[str, Any]] = None
+
+
+@dataclass(frozen=True)
+class AppState:
+    current_mol_index: int = 0
+    iteration: int = 0
+    inner_iteration: int = 0
+    current_tab: str = "General"
+    current_liability: Optional[str] = None
+
+
+class MoleculeDataHandler:
+    def __init__(self, settings: Dict):
         self.settings = settings
-        helper.clear_current_files(f"{PKGDIR}/resources/input_files/current_run/")
-        self.loadFiles()
-        if self.settings.reward_model is not None:
-            self.initRFTrainer(self.settings.reward_model)
-        if self.settings.de_novo_model is not None:
-            self.denovo_runner = tr.DeNovoRunner(self.settings.de_novo_model)
-        else:
-            self.denovo_runner = None
+        self._molecules = self.load_initial_data()
 
-        self.setVariables(results_folder=results_folder, initial=True)
-        self.setGlobalVariables()
-        self.clear_temp_images()
+    def get_molecule(self, index: int) -> MoleculeData:
+        return self._molecules[index]
 
-    def loadFiles(self):
-        self.designPath = f"{PKGDIR}/design/"
+    def update_evaluation(self, index: int, evaluation: Dict) -> None:
+        old_mol = self._molecules[index]
+        new_mol = MoleculeData(
+            smiles=old_mol.smiles, properties=old_mol.properties, evaluation=evaluation
+        )
+        self._molecules[index] = new_mol
+
+    def get_evaluated_molecules(self) -> Tuple[List[str], List[float]]:
+        evaluated = [mol for mol in self._molecules if mol.evaluation is not None]
+        return (
+            [mol.smiles for mol in evaluated],
+            [mol.evaluation["score"] for mol in evaluated],
+        )
+
+    def load_initial_data(self) -> List[MoleculeData]:
+        """
+        Load initial data and convert it to a list of MoleculeData objects.
+
+        Returns:
+            List[MoleculeData]: A list of MoleculeData objects.
+        """
+        df, _ = data.loadData(self.settings.dict(), initial=True)
+
+        molecules = []
+        for _, row in df.iterrows():
+            molecule = MoleculeData(
+                smiles=row["SMILES"],
+                properties={
+                    name: row[self.settings.dict()["propertyLabels"][name]]
+                    for name in self.settings.dict()["propertyLabels"]
+                },
+                evaluation=None,  # Initially, no evaluation
+            )
+            molecules.append(molecule)
+
+        return molecules
+
+    def get_all_data(self) -> pd.DataFrame:
+        return pd.DataFrame([mol.__dict__ for mol in self._molecules])
+
+    def clear_temp_images(self, files_only: bool = False) -> None:
+
+        temp_image_folder = f"{PKGDIR}/resources/temp_images/"
+
+        if os.path.exists(temp_image_folder):
+            if files_only:
+                self.remove_files_only(temp_image_folder)
+            else:
+                shutil.rmtree(temp_image_folder)
+                os.mkdir(temp_image_folder)
+
+    def remove_files_only(self, directory):
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                file_path = os.path.join(root, file)
+                os.remove(file_path)
+            break
+
+    @property
+    def num_molecules(self) -> int:
+        return len(self._molecules)
+
+
+class BackendSignals(QObject):
+    state_changed = Signal(AppState)
+    molecule_evaluated = Signal(int)  # Emits index of evaluated molecule
+
+
+class Backend(QObject):
+    def __init__(self, settings: BaseConfig, results_folder: str):
+        super().__init__()
+        self.settings = settings
         self.load_settings(self.settings)
+        self.signals = BackendSignals()
+        self.results_folder = results_folder
+        self.data_handler = MoleculeDataHandler(settings)
+        self._state = AppState()
+        self._setup_initial_state()
+
+        self.init_models()
+        self.tracker = MetisTracker()
+
+        self.set_variables(results_folder=results_folder, initial=True)
+        self.set_global_variables()
+        self.data_handler.clear_temp_images()
+
+    def _setup_initial_state(self):
+        """Initialize the application state."""
+        self.color_dict = self.color_dict = data.createRGBColorDict(
+            self.settings.ui.substructures.liabilities
+        )
+        self._state = AppState()
+        self.signals.state_changed.emit(self._state)
 
     def load_settings(self, settings):
         self._tutorial = settings.tutorial
@@ -62,44 +164,58 @@ class Backend:
                 open(settings.ui.show_atom_contributions.path, "rb")
             )
 
-    def initRFTrainer(self, settings):
-        self.RFTrainer = trf.trainRF(settings)
-
-    def setVariables(self, results_folder: str = "", initial: bool = True):
-        self.df_result = []
-        self.df_list = []
-        self.color_dict = data.createRGBColorDict(
-            self.settings.ui.substructures.liabilities
+    def init_models(self):
+        """Initialize RF and De Novo models."""
+        self.rf_model = (
+            trainRF(self.settings.reward_model)
+            if self.settings.reward_model is not None
+            else None
         )
-        if initial == True:
+        self.denovo_model = (
+            DeNovoRunner(self.settings.de_novo_model)
+            if self.settings.de_novo_model is not None
+            else None
+        )
+
+    def set_variables(self, results_folder: str = "", initial: bool = True):
+        if initial:
             self.results_path = data.createResultsFolder(
                 join(results_folder, self.settings.data.run_name),
                 debug=self._debug,
             )
 
         self.set_per_round_variables(initial=initial)
-        self.clear_temp_images(files_only=True)
+        self.data_handler.clear_temp_images(files_only=True)
 
     def set_per_round_variables(self, initial: bool = True):
         np.random.seed(self.settings.seed)
         self.df, self.unrated_sample = data.loadData(
             self.settings.dict(), initial=initial
         )
+        new_state = AppState(
+            current_mol_index=0,
+            iteration=self._state.iteration,
+            inner_iteration=self._state.inner_iteration,
+        )
+        self._update_state(new_state)
 
-        self.numProperties = len(self.unrated_sample)
-        self.numEvaluatedMols = sum(self.df.evaluated)
-        self.currentMolIndex = 0
-        self.numMols = len(self.df)
-        self._current_liability = None
+    def update_current_mol(self, direction: int) -> None:
+        """Update the current molecule index."""
+        new_index = (
+            self._state.current_mol_index + direction
+        ) % self.data_handler.num_molecules
+        self._update_state(current_mol_index=new_index)
 
-    def setGlobalVariables(self):
-        self.next_iteration_signal = tr.WorkerSignals()
-        self.currentTab = "General"
-        self.iteration = 0
-        self.inner_iteration = 0
-        self.track_substructure = tracker.metis_tracker()
-        self._fileName = None
-        if self._tutorial == True:
+    def _update_state(self, **kwargs) -> None:
+        """Update the application state."""
+        new_state = AppState(**{**self._state.__dict__, **kwargs})
+        self._state = new_state
+        self.signals.state_changed.emit(new_state)
+
+    def set_global_variables(self):
+        """Set up global variables and objects."""
+        self.next_iteration_signal = WorkerSignals()
+        if self._tutorial:
             self.tutorial = tutorial.Second(self)
         self.counterfactual_window = counterfactual_mol_display.CounterfactualWindow()
 
@@ -114,23 +230,6 @@ class Backend:
         self.iteration += 1
         self.next_iteration_signal.finished.emit()
 
-    def clear_temp_images(self, files_only: bool = False):
-        self._temp_image_folder = f"{PKGDIR}/resources/temp_images/"
-
-        if os.path.exists(self._temp_image_folder):
-            if files_only:
-                self.remove_files_only(self._temp_image_folder)
-            else:
-                shutil.rmtree(self._temp_image_folder)
-                os.mkdir(self._temp_image_folder)
-
-    def remove_files_only(self, directory):
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                file_path = os.path.join(root, file)
-                os.remove(file_path)
-            break
-
     def save_final_dataset(self):
         if len(self.df_list) > 0:
             self.df = pd.concat(self.df_list, axis=0, ignore_index=True).reset_index(
@@ -144,25 +243,21 @@ class Backend:
             )
 
     def save_substructure_dict(self):
-        self.track_substructure.save_substruct(f"{self.results_path}/substructure.json")
-
-    def update_current_mol(self, direction):
-        self.currentMolIndex = (self.currentMolIndex + direction) % self.df.shape[0]
+        self.tracker.save_substruct(f"{self.results_path}/substructure.json")
 
     def check_if_evaluated(self):
-        currentProperties = self.df.iloc[
-            self.currentMolIndex, -(self.numProperties + 1) : -1
-        ]
-
-        if self.unrated_sample.equals(currentProperties) == False:
-            self.df.at[self.currentMolIndex, "evaluated"] = 1
+        """Check if the current molecule has been evaluated."""
+        current_mol = self.data_handler.get_molecule(self._state.current_mol_index)
+        if current_mol.evaluation is not None:
+            self.signals.molecule_evaluated.emit(self._state.current_mol_index)
 
     def get_smiles_and_ratings(self):
-        return self.df.get_rated_smiles()
+        """Get SMILES and ratings for evaluated molecules."""
+        return self.data_handler.get_evaluated_molecules()
 
     @property
     def reached_max_iterations(self):
-        return self._max_iter is not None and self.iteration == self._max_iter
+        return self._max_iter is not None and self._state.iteration == self._max_iter
 
     @property
     def next_unrated_mol(self):
@@ -364,7 +459,7 @@ class Backend:
         Reinvent run on the server.
         """
 
-        self.worker = tr.Worker(
+        self.worker = Worker(
             self.denovo_runner,
             self._activity_label,
             self.settings.data.path,

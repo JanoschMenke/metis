@@ -1,7 +1,7 @@
 seed: 23234
 max_iterations: 1
 innerloop_iterations: null
-activity_label: "JNK3" # None 
+activity_label: "raw_JNK3" # None 
 introText: "We are interested in the design of inhibitor for the JNK3 Kinase. We have identified two key properties:"
 propertyLabels: 
   "JNK3 Activity": "raw_JNK3"
@@ -14,7 +14,7 @@ data:
   run_name: "testrun"
 ui:
   show_atom_contributions: 
-    render: true
+    render: True
     path: "qsar_files/qsar_jnk3_BR3L2048.pkl"
     ECFP:
       bitSize: 2048

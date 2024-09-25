@@ -31,27 +31,6 @@ class evalDataFrame(pd.DataFrame):
             name for name in settings["ui"]["substructures"]["liabilities"]
         ] + ["other"]
 
-        if settings["ui"]["tab"]["render"] == True:
-            tab_names = settings["ui"]["tab"]["tab_names"]
-        else:
-            tab_names = ["General"]
-        for i in self.attrs["liability_ll"]:
-            for name in tab_names:
-                self.loc[:, f"{i}AtomSelection_{name}"] = np.empty(
-                    (len(self), 0)
-                ).tolist()
-                self.loc[:, f"{i}SMARTS_{name}"] = ""
-        for name in tab_names:
-            self.loc[:, f"otherTextEntry_{name}"] = ""
-
-        if settings["ui"]["general"]["slider"] == True:
-            self.loc[:, "rating"] = 50
-        else:
-            self.loc[:, "rating"] = None
-        self.loc[:, self.attrs["globalLiab"]] = 0
-        self.loc[:, "alternativeMolecule"] = ""
-        self.loc[:, "evaluated"] = 0
-
     def getPropertyLabels(self, index: int):
         out_dict = {
             name: self[self.attrs["settings"]["propertyLabels"][name]].iloc[index]
@@ -179,7 +158,7 @@ def createResultsFolder(directory: str, debug: bool = False) -> str:
     Args:
         directory (str): The path to the directory where the results folder will be created.
         debug (bool, optional): If True, no additional folder with a timestamp will be created
-                               in case the directory already exists. Default is False.
+        in case the directory already exists. Default is False.
 
     Returns:
         str: The path to the created or existing results folder.
@@ -195,27 +174,14 @@ def createResultsFolder(directory: str, debug: bool = False) -> str:
     elif debug == False:
         now = datetime.now()
         dt_string = now.strftime("%d%m%Y_%H:%M:%S")
-        os.makedirs(f"{directory}_{dt_string}")
-        return f"{directory}_{dt_string}"
+        new_path = directory / f"_{dt_string}"
+        os.makedirs(new_path)
+        return new_path
     else:
         shutil.rmtree(directory)
         os.makedirs(directory)
 
     return directory
-
-
-def createRGBColorDict(settings):
-    """
-    The function `createRGBColorDict` takes a dictionary of settings and returns a dictionary where the
-    keys are names and the values are RGB color values.
-    """
-
-    rgbColorDict = {}
-    for name in settings:
-        rgbColorDict[name] = helper.hex2RGB(settings[name].color)
-
-    rgbColorDict["other"] = (0.753, 0.753, 0.753)
-    return rgbColorDict
 
 
 def select_counterfactual(originalSmiles, toKeep):

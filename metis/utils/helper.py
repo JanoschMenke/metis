@@ -255,3 +255,17 @@ def is_faulty_pyside_version():
 
         return False
     """
+
+
+def create_color_dictionary(settings):
+    """
+    The function `createRGBColorDict` takes a dictionary of settings and returns a dictionary where the
+    keys are names and the values are RGB color values.
+    """
+
+    rgbColorDict = {}
+    for name in settings:
+        rgbColorDict[name] = hex2RGB(settings[name].color)
+
+    rgbColorDict["other"] = (0.753, 0.753, 0.753)
+    return rgbColorDict
