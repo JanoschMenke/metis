@@ -24,7 +24,7 @@ PKGDIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # The main window class
-class Tetis(QtWidgets.QMainWindow):
+class Metis(QtWidgets.QMainWindow):
     # Constructor function
     def __init__(
         self,
@@ -33,7 +33,7 @@ class Tetis(QtWidgets.QMainWindow):
         fileName=None,
         loglevel="WARNING",
     ):
-        super(Tetis, self).__init__()
+        super(Metis, self).__init__()
         self.settings = settings
 
         self.controller = Controller(settings, output_path=output_path)
@@ -90,7 +90,7 @@ def launch(loglevel: str = "WARNING"):
 
     app = QApplication(sys.argv)
     settings: BaseConfig = load_settings(args.file)
-    main_window = Tetis(
+    main_window = Metis(
         settings,
         output_path=Path(args.output),
         fileName=args.file,

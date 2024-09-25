@@ -1,4 +1,4 @@
-from metis.core.backend_alt import Backend
+from metis.core.backend import Backend
 from metis.core.storing import AppState
 from metis.ui import gui
 from metis.models.denovo_generator import DeNovoRunner
