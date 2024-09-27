@@ -115,10 +115,7 @@ class Backend(QObject):
         self._update_evaluation_field("multi_select", values)
 
     def _update_evaluation_field(self, field: str, value: Any):
-        current_mol_data = self.molecule_handler.get_molecule(
-            self.state.current_mol_index
-        )
-        evaluation = current_mol_data.evaluation or {}
+        evaluation = self.current_evaluation
         evaluation[field] = value
         self.update_evaluation(evaluation)
 
@@ -138,20 +135,14 @@ class Backend(QObject):
         self._retrieve_text_in_other()
 
     def _retrieve_text_in_other(self) -> None:
-        current_mol_data = self.molecule_handler.get_molecule(
-            self.state.current_mol_index
-        )
-        evaluation = current_mol_data.evaluation or {}
+        evaluation = self.current_evaluation
         key = f"TextInOther_{self.state.current_tab}"
         text_in_other = evaluation.get(key, "Other?")
         if text_in_other:
             self.signals.text_in_other.emit(self.state.current_tab, text_in_other)
 
     def _retrieve_atom_selection(self) -> None:
-        current_mol_data = self.molecule_handler.get_molecule(
-            self.state.current_mol_index
-        )
-        evaluation = current_mol_data.evaluation or {}
+        evaluation = self.current_evaluation
         key = f"{self.state.current_liability}AtomSelection_{self.state.current_tab}"
         atoms = evaluation.get(key, [])
         self.signals.atom_selection_updated.emit(atoms)
@@ -162,7 +153,7 @@ class Backend(QObject):
         current_mol_data = self.molecule_handler.get_molecule(
             self.state.current_mol_index
         )
-        evaluation = current_mol_data.evaluation or {}
+        evaluation = self.current_evaluation
         key = f"{self.state.current_liability}AtomSelection_{self.state.current_tab}"
         evaluation[key] = atoms
 
@@ -177,6 +168,11 @@ class Backend(QObject):
         ):
             evaluation[f"TextInOther_{self.state.current_tab}"] = text_in_other
 
+        self.update_evaluation(evaluation)
+
+    def store_alternative_molecule(self, smiles: str) -> None:
+        evaluation = self.current_evaluation
+        evaluation["alternative_molecules"] = smiles
         self.update_evaluation(evaluation)
 
     def _retrieve_properties(self) -> None:
@@ -239,6 +235,14 @@ class Backend(QObject):
     @property
     def num_molecules_not_evaluated(self):
         return len(self.molecule_handler) - len(self.state.evaluated_molecules)
+
+    @property
+    def current_evaluation(self):
+        current_mol_data = self.molecule_handler.get_molecule(
+            self.state.current_mol_index
+        )
+        evaluation = current_mol_data.evaluation or {}
+        return evaluation
 
     def gen_mol_image(self):
         current_mol_data = self.molecule_handler.get_molecule(

@@ -1,5 +1,6 @@
 from PySide6 import QtWidgets, QtCore
 from rdeditor import molEditWidget
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtGui import *
 from metis.config.settings import BaseConfig
 from metis.ui import widgets, molwall, interactionWidgets
@@ -9,6 +10,8 @@ from typing import Optional
 
 
 class MetisGUI(QtWidgets.QWidget):
+    alternative_molecule_saved = Signal(str)
+
     def __init__(self, settings: BaseConfig):
         super(MetisGUI, self).__init__()
         self.settings = settings
@@ -52,6 +55,7 @@ class MetisGUI(QtWidgets.QWidget):
         self.evaluationWindow.evaluationWidget.local_liability_changed.connect(
             self.set_highlight_colors
         )
+        self.second_editor.saveAction.triggered.connect(self.alternative_moelcule)
 
     def set_main_layout(self):
         self.mainlayout = QtWidgets.QHBoxLayout()
@@ -94,11 +98,9 @@ class MetisGUI(QtWidgets.QWidget):
             self.settings.dict()
         )
         self.evaluationWindow.setMinimumSize(600, 600)
-        #! self.evaluationWindow.updateProperties(self.settings.property_labels)
 
     def set_molecular_editor(self):
         self.second_editor = rdeditor_wrapper.MetisEditor(loglevel="Warning")
-        #! self.secondEditor.saveAction.triggered.connect(self.getEditedMolecule)
 
     def update_molecule(self, mol: Chem.Mol):
         self.editor.mol = mol
@@ -158,3 +160,13 @@ class MetisGUI(QtWidgets.QWidget):
     def enable_inputs(self):
         QtCore.QCoreApplication.processEvents()
         self.setEnabled(True)
+
+    def open_second_editor(self):
+        self.second_editor.editor.mol = self.editor.mol
+        self.second_editor.original_mol = self.editor.mol
+        self.second_editor.show_and_raise()
+
+    def alternative_moelcule(self):
+        self.alternative_molecule_saved.emit(
+            Chem.MolToSmiles(self.second_editor.editor.mol)
+        )

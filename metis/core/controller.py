@@ -47,10 +47,16 @@ class Controller(QtCore.QObject):
         self._connect_backend_signals()
         self._connect_evaluation_signals()
         self._connect_atom_selection_signals()
+        self._connect_ui_signals()
 
     def _connect_navigation_signals(self) -> None:
         self.ui.navigation.directionSignal.connect(self.backend.handle_navigation)
         self.ui.navigation.openWindowSignal.connect(self._nav_bar_actions)
+
+    def _connect_ui_signals(self) -> None:
+        self.ui.alternative_molecule_saved.connect(
+            self.backend.store_alternative_molecule
+        )
 
     def _connect_backend_signals(self) -> None:
         self.backend.signals.state_changed.connect(self.update_ui_state)
@@ -151,7 +157,7 @@ class Controller(QtCore.QObject):
             #!self.findNextUnratedMol()
             pass
         elif action == "edit":
-            pass  #!self.openMolEditor()
+            self.ui.open_second_editor()
         elif action == "send":
             self.train_and_update_model()
         elif action == "finish":
