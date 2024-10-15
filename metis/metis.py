@@ -51,26 +51,26 @@ parser = argparse.ArgumentParser("Metis")
 parser.add_argument("-f", "--file", default="setting.yml")
 args = parser.parse_args()
 
+# Load settings as a dictionary from the YAML file
+def load_settings(file_path: str) -> dict:
+    with open(file_path, 'r') as f:
+        settings = yaml.safe_load(f)
+    return settings
+
 
 # The main window class
 class MainWindow(QtWidgets.QMainWindow):
-    # Constructor function
     def __init__(self, fileName=None, loglevel="WARNING"):
-        # The above code is calling the constructor of the parent class `MainWindow` and initializing
-        # an instance of it.
         super(MainWindow, self).__init__()
+
         try:
-            [
-                f.unlink()
-                for f in Path("reinvent_connect/input_files/current_run/").glob("*")
-                if f.is_file()
-            ]
+            [f.unlink() for f in Path("reinvent_connect/input_files/current_run/").glob("*") if f.is_file()]
         except:
             pass
 
         self.setSize()  # set size of main window
         self.loadFiles()  # load settings and set files paths
-        self.initRFTrainer(self.settings.interactive_model)
+        self.initRFTrainer(self.settings['interactive_model'])  # Pass the model as a dict key
         self.setVariables()  # set properties used throughout the main application
 
         self.iteration = 0
@@ -82,9 +82,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setMolecularEditor()  # the molecular Editor can be used to actually modify the molecule
         self.setHighlightColors()
         self.molWall = molwall.molwall()
-        if self._human_component == True:
+
+        if self.settings['use_human_component']:  # Access settings through dict keys
             self.analyzer = analysis.analyser(
-                path_initial_data=self.settings.data.initial_path,
+                path_initial_data=self.settings['data']['initial_path'],
                 path_all_scaffolds="../data/all_topological_scaffolds.csv",
             )
 
@@ -92,33 +93,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.initGUI(fileName=fileName)
 
         self.editor.logger.setLevel(loglevel)
-        if self._tutorial == True:
+
+        if self.settings['tutorial']:  # Check for tutorial setting
             self.tutorial = tutorial.Second(self)
+
         self.counterfactual_window = counterfactual_mol_display.CounterfactualWindow()
 
     def loadFiles(self):
         self.designPath = os.path.abspath(os.path.dirname(__file__)) + "/design/"
-        self.settings = settings_validator.BaseConfig(**yaml.safe_load(open(args.file)))
+        self.settings = load_settings(args.file)  # Load settings as a dictionary
         self.load_settings(self.settings)
 
     def initRFTrainer(self, settings):
-        self.RFTrainer = trf.trainRF(**settings.dict())
+        self.RFTrainer = trf.trainRF(**settings)  # Pass settings as a dictionary
 
     def load_settings(self, settings):
-        self._tutorial = settings.tutorial
-        self._atom_contributions = settings.ui.show_atom_contributions
-        self._reference_mols = settings.ui.show_reference_molecules
-        self._human_component = settings.use_human_component
-        self._debug = settings.debug
-        self._slider = settings.ui.general.slider
-        self._max_iter = settings.max_iterations
-        self._max_inner_loop_iter = settings.innerloop_iterations
-        self._activity_label = settings.activity_label
-        self._training_data_path = settings.interactive_model.training_data_path
-        self._initial_qsar_model = pickle.load(
-            open(settings.interactive_model.qsar_model_path, "rb")
-        )
-        self._num_molecules = settings.data.num_molecules
+        self._tutorial = settings['tutorial']
+        self._atom_contributions = settings['ui']['show_atom_contributions']
+        self._reference_mols = settings['ui']['show_reference_molecules']
+        self._human_component = settings['use_human_component']
+        self._debug = settings['debug']
+        self._slider = settings['ui']['general']['slider']
+        self._max_iter = settings['max_iterations']
+        self._max_inner_loop_iter = settings['innerloop_iterations']
+        self._activity_label = settings['activity_label']
+        self._training_data_path = settings['interactive_model']['training_data_path']
+        self._initial_qsar_model = pickle.load(open(settings['interactive_model']['qsar_model_path'], "rb"))
+        self._num_molecules = settings['data']['num_molecules']
 
     def setSize(self):
         self.setMinimumSize(1500, 800)
@@ -130,12 +131,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         np.random.seed(23234)
         self.df, self.unrated_sample = data.loadData(
-            self.settings.dict(), model=self.RFTrainer, initial=initial
+            self.settings, model=self.RFTrainer, initial=initial
         )
 
         if initial == True:
             self.results_path = data.createResultsFolder(
-                f"../results/{self.settings.data.run_name}",
+                f"../results/{self.settings['data']['run_name']}",
                 debug=self._debug,
             )
         self.numProperties = len(self.unrated_sample)
@@ -171,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def setHighlightColors(self):
         self.editor.colorDict = data.createRGBColorDict(
-            self.settings.ui.substructures.liabilities
+            self.settings['ui']['substructures']['liabilities']
         )
 
     def initGUI(self, fileName=None):
@@ -249,7 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
 
         self.navigation = interactionWidgets.navigationBar(
-            self.settings.ui.navigationbar.dict()
+            self.settings['ui']['navigationbar']
         )
         self.navigation.backButton.clicked.connect(
             lambda: self.onMyToolBarButtonClick(-1)
@@ -287,7 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         properties, and connects buttons to a switchLiability function.
         """
         self.evaluationWindow = interactionWidgets.evaluationWindow(
-            self.settings.dict()
+            self.settings
         )
         self.evaluationWindow.setMinimumSize(600, 600)
         self.evaluationWindow.TPPDispay.updateMolProperties(
@@ -419,7 +420,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.secondEditor.show()
         self.saveEvaluations()
         if smiles is None:
-            if self.settings.ui.general.slider == True:
+            if self.settings['ui']['general']['slider'] == True:
                 smiles = self.df.SMILES[self.df.rating != 50].values.tolist()
                 rating = self.df.rating[self.df.rating != 50].values.tolist()
             else:
@@ -470,7 +471,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.editor._mol,
                 self._initial_qsar_model,
                 save_name=f"atomContribution{self.currentMolIndex}.png",
-                ecfp_settings=self.settings.interactive_model.ECFP.dict(),
+                ecfp_settings=self.settings['interactive_model']['ECFP'],
             )
         pixmap = QPixmap(
             f"{os.getcwd()}/utils/temp_images/atomContribution{self.currentMolIndex}.png"
@@ -546,7 +547,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _copyScaffoldMemory(self):
         shutil.copy2(
-            self.settings.data.path,
+            self.settings['data']['path'],
             f"{self.results_path}/iteration_{self.iteration}/scaffold_memory.csv",
         )
 
@@ -642,9 +643,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def trackExperiment(self):
         if self.iteration == 0:
-            entire_df = pd.read_csv(self.settings.data.initial_path)
+            entire_df = pd.read_csv(self.settings['data']['initial_path'])
         else:
-            entire_df = pd.read_csv(self.settings.data.path)
+            entire_df = pd.read_csv(self.settings['data']['path'])
         _, out = self.analyzer.trackFoundScaffolds(self.df, entire_df)
 
     def sent2Reinvent(
@@ -755,7 +756,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.df.at[self.currentMolIndex, "rating"] = ratingMolecule
         self.df.loc[
             self.currentMolIndex,
-            self.settings.ui.global_properties.liabilities,
+            self.settings['ui']['global_properties']['liabilities'],
         ] = concernsMolecule
         self.saveTextProvidedInOther()
 

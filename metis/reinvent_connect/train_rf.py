@@ -194,6 +194,8 @@ class trainRF:
 
     def get_prob_distribution(self, smiles):
         fps = self.ecfpGenerator.get_fingerprints(smiles)
+        if len(smiles) < 2:
+            fps = np.array(fps).reshape(1,-1)
         prob_dist = [
             estimator.predict_proba(fps) for estimator in self.model.estimators_
         ]
@@ -235,7 +237,11 @@ class ecfp_generator:
         Returns:
             np.ndarray[np.int32]: an array of fingerprints, where each fingerprint is represented as an array of integers.
         """
-        fps = np.stack([self.generate(Chem.MolFromSmiles(smile)) for smile in smiles])
+        if len(smiles) > 1:
+            fps = np.stack([self.generate(Chem.MolFromSmiles(smile)) for smile in smiles])
+        else:
+            print("WARNING: Too few high-scoring molecules.")
+            fps = np.array([self.generate(Chem.MolFromSmiles(smile)) for smile in smiles])
         return fps
 
 

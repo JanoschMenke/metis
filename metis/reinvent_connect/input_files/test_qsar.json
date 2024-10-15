@@ -1,0 +1,88 @@
+{
+    "logging": {
+        "job_id": "demo",
+        "job_name": "inital_qsar",
+        "logging_frequency": 0,
+        "logging_path": "/users/nahalyas/Test_my_code/progress.log",
+        "recipient": "local",
+        "result_folder": "/users/nahalyas/Test_my_code/results",
+        "sender": "http://127.0.0.1"
+    },
+    "model_type": "default",
+    "parameters": {
+        "diversity_filter": {
+            "minscore": 0.4,
+            "minsimilarity": 0.4,
+            "name": "IdenticalMurckoScaffold",
+            "nbmax": 25
+        },
+        "inception": {
+            "memory_size": 20,
+            "sample_size": 5,
+            "smiles": []
+        },
+        "reinforcement_learning": {
+            "agent": "/users/nahalyas/Test_my_code/Agent_Initial.ckpt",
+            "batch_size": 128,
+            "learning_rate": 0.0001,
+            "margin_threshold": 50,
+            "n_steps": 100,
+            "prior": "/users/nahalyas/Test_my_code/random.prior.new",
+            "sigma": 180
+        },
+        "scoring_function": {
+            "name": "custom_sum",
+            "parallel": true,
+            "parameters": [
+                {
+                    "component_type": "predictive_property",
+                    "name": "herg",
+                    "specific_parameters": {
+                        "descriptor_type": "ecfp_counts",
+                        "model_path": "/users/nahalyas/Test_my_code/herg.pkl",
+                        "radius": 3,
+                        "scikit": "classification",
+                        "size": 2048,
+                        "transformation": {
+                            "transformation_type": "flip_probability"
+                        },
+                        "use_counts": true,
+                        "use_features": false
+                    },
+                    "weight": 1
+                },
+                {
+                    "component_type": "predictive_property",
+                    "name": "DRD2",
+                    "specific_parameters": {
+                        "descriptor_type": "ecfp_counts",
+                        "model_path": "/users/nahalyas/Test_my_code/Model_Initial.pkl",
+                        "radius": 3,
+                        "scikit": "classification",
+                        "size": 2048,
+                        "transformation": {
+                            "transformation_type": "no_transformation"
+                        },
+                        "use_counts": true,
+                        "use_features": false
+                    },
+                    "weight": 1
+                },
+                {
+                    "component_type": "qed_score",
+                    "name": "QED Score",
+                    "specific_parameters": {
+                        "transformation": {
+                            "low": 0.35,
+                            "transformation": true,
+                            "transformation_type": "right_step"
+                        }
+                    },
+                    "weight": 0.5
+                }
+            ]
+        }
+    },
+    "run_type": "reinforcement_learning",
+    "version": 3
+}

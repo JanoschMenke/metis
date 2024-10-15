@@ -1,0 +1,69 @@
+tutorial: false
+debug: false
+max_iterations: 3
+innerloop_iterations: null
+use_human_component: false
+activity_label: "DRD2"
+introText: "We are interested in the design of an new  binder for the Dopamine receptor D2. We have identified two key properties:"
+propertyLabels: 
+  "DRD2 Activity": "raw_DRD2"
+  "hERG Activity": "raw_herg"
+data:
+  initial_path: "../data/scaffold_memory_oracle_truth.csv"
+  path: "../data/scaffold_memory.csv"
+  selection_strategy: "epig"
+  num_molecules: 20
+  run_name: "evabeta"
+ui:
+  show_atom_contributions: true
+  show_reference_molecules: true
+  tab: 
+    render: false
+    tab_names: ["General","DRD2"]
+  navigationbar:
+    sendButton: 
+      render: true
+    editButton:
+      render: true
+    compareButton:
+      render: false
+  general:
+    render: true
+    slider: false
+  substructures:
+    render: true
+    liabilities:
+      ugly:
+        name: "Ugly"
+        color: "#ff7f7f"
+      tox:
+        name: "Toxicity" 
+        color: "#51d67e"
+      stability:
+        name: "Stability"
+        color: "#eed358"
+      like:
+        name: "Good"
+        color: "#9542f5"
+  global_properties:
+    render: true
+    liabilities: [
+            "Solubility",
+            "Lipophilicity",
+            "Plasma Proteinbinding",
+            "Synthetic Accessibility",
+            "Permeability",
+            "hERG", 
+            "Too Big",
+            "Too Small",
+        ]
+interactive_model:
+  oracle_score: True  # use oracle score or user model to update
+  weight: "pseudo_confidence" 
+  oracle_path: "reinvent_connect/input_files/drd2_count.pkl"
+  qsar_model_path: "reinvent_connect/input_files/initial_qsar_model_true_labels.pkl"
+  training_data_path: "../data/qsar_data.csv"
+  ECFP:
+    bitSize: 2048
+    radius: 3
+    useCounts: true 

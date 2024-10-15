@@ -178,7 +178,7 @@ def createRGBColorDict(settings):
 
     rgbColorDict = {}
     for name in settings:
-        rgbColorDict[name] = helper.hex2RGB(settings[name].color)
+        rgbColorDict[name] = helper.hex2RGB(settings[name]['color'])
 
     rgbColorDict["other"] = (0.753, 0.753, 0.753)
     return rgbColorDict
